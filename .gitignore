@@ -1,46 +1,71 @@
 --------------------------------------------------
 
-1. Genel Yoksay?lacaklar
+1. Genel Yoksay?lacaklar (IDE ve OS Dosyalar?)
 
 --------------------------------------------------
 
+macOS dosyalar?
+
 .DS_Store
+
+Log dosyalar?
+
+*.log
+logs.txt
+
+IDE ve Ayar Klasörleri
+
 .vscode/
 .idea/
 *.iws
 *.iml
-.ipr
+*.ipr
+.project
+.classpath
+.settings/
+
+Ortam De?i?keni Dosyalar?
+
 .env
-.env.
-logs.txt
+.env.*
+.env.local
+
+Java ikili dosyalar?
+
+*.class
+*.jar
+*.war
+*.ear
+*.zip
 
 --------------------------------------------------
 
-2. Vue.js (Medicine-Frontend) Için Yoksay?lacaklar
+2. Vue.js / Node (Medicine-Frontend) Için Yoksay?lacaklar
 
 --------------------------------------------------
 
 /Medicine-Frontend/node_modules
-/Medicine-Frontend/dist           # NPM build ç?kt?s?
-/Medicine-Frontend/.vitepress/cache
-/Medicine-Frontend/tmp
-/Medicine-Frontend/temp
+/Medicine-Frontend/dist           # Vue.js Build Ç?kt?s?
+/Medicine-Frontend/npm-debug.log
+/Medicine-Frontend/package-lock.json
+/Medicine-Frontend/yarn.lock
+/Medicine-Frontend/*.tsbuildinfo
 
 --------------------------------------------------
 
-3. Spring Boot (medicine-backend) Için Yoksay?lacaklar
+3. Spring Boot / Maven (medicine-backend) Için Yoksay?lacaklar
 
 --------------------------------------------------
 
-/medicine-backend/target/        # Maven derleme ç?kt?s? (JAR/WAR/classes)
-/medicine-backend/log/
-/medicine-backend/*.log
+🛑 EN ÖNEML?S?: T?m derleme ç?kt?lar?
 
-Maven Wrapper için
+/medicine-backend/target/
 
-.mvn/wrapper/maven-wrapper.jar
+Maven Wrapper
+
 /medicine-backend/mvnw
 /medicine-backend/mvnw.cmd
+/medicine-backend/.mvn/wrapper/maven-wrapper.jar
 
 --------------------------------------------------
 
@@ -48,10 +73,8 @@ Maven Wrapper için
 
 --------------------------------------------------
 
-Docker, veritaban?n?n kal?c? verilerini bu klasörde saklar
-
-Bu klasör?n?z?n ad?na ba?l? olarak de?i?ebilir, ancak genel olarak docker volume verileri
-
-repository'ye yüklenmez.
-
 /postgres_data/
+
+Docker Cache ve Build dosyalar?
+
+.dockerignore
