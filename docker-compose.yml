@@ -1,0 +1,61 @@
+version: '3.8'
+
+services:
+
+  # 1. PostgreSQL Veritabanı Servisi
+  db:
+    image: postgres:15-alpine
+    container_name: postgres_db
+    restart: always
+    environment:
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: postgres
+      POSTGRES_DB: medicine_db
+    ports:
+      - "5432:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+
+    # DB'nin hazır olduğunu garantilemek için sağlık kontrolü
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U postgres"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+
+  # 2. Spring Boot Backend Servisi
+  backend:
+    build:
+      context: ./medicine-backend
+      dockerfile: Dockerfile
+    container_name: spring_backend
+    ports:
+      - "8080:8080" # Dış dünyaya 8080 portunda aç
+    environment:
+      # DB'ye Docker içindeki "db" servis adı ile bağlan
+      SPRING_DATASOURCE_URL: jdbc:postgresql://db:5432/medicine_db
+      SPRING_DATASOURCE_USERNAME: postgres
+      SPRING_DATASOURCE_PASSWORD: postgres
+
+    # DB servisi sağlıklı olana kadar bekle
+    depends_on:
+      db:
+        condition: service_healthy
+
+  # 3. Vue.js Frontend Servisi
+  frontend:
+    build:
+      context: ./Medicine-Frontend
+      dockerfile: Dockerfile
+      # Build argümanı: Frontend'in derlenirken kullanacağı API URL'ini belirtir
+      args:
+        VITE_API_URL: http://localhost:8080
+    container_name: vue_frontend
+    ports:
+      - "80:80"
+    depends_on:
+      # Backend ayağa kalktıktan sonra başla (zorunlu değil ama iyidir)
+      - backend
+
+volumes:
+  postgres_data:

@@ -1,0 +1,57 @@
+--------------------------------------------------
+
+1. Genel Yoksay?lacaklar
+
+--------------------------------------------------
+
+.DS_Store
+.vscode/
+.idea/
+*.iws
+*.iml
+.ipr
+.env
+.env.
+logs.txt
+
+--------------------------------------------------
+
+2. Vue.js (Medicine-Frontend) Için Yoksay?lacaklar
+
+--------------------------------------------------
+
+/Medicine-Frontend/node_modules
+/Medicine-Frontend/dist           # NPM build ç?kt?s?
+/Medicine-Frontend/.vitepress/cache
+/Medicine-Frontend/tmp
+/Medicine-Frontend/temp
+
+--------------------------------------------------
+
+3. Spring Boot (medicine-backend) Için Yoksay?lacaklar
+
+--------------------------------------------------
+
+/medicine-backend/target/        # Maven derleme ç?kt?s? (JAR/WAR/classes)
+/medicine-backend/log/
+/medicine-backend/*.log
+
+Maven Wrapper için
+
+.mvn/wrapper/maven-wrapper.jar
+/medicine-backend/mvnw
+/medicine-backend/mvnw.cmd
+
+--------------------------------------------------
+
+4. Docker Için Yoksay?lacaklar
+
+--------------------------------------------------
+
+Docker, veritaban?n?n kal?c? verilerini bu klasörde saklar
+
+Bu klasör?n?z?n ad?na ba?l? olarak de?i?ebilir, ancak genel olarak docker volume verileri
+
+repository'ye yüklenmez.
+
+/postgres_data/
