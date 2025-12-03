@@ -38,7 +38,7 @@
 import { ref } from 'vue';
 import axios from 'axios';
 
-const emit = defineEmits(['switch-mode']);
+const emit = defineEmits(['switch-mode', 'login-success']);
 
 const form = ref({
   email: '',
@@ -53,6 +53,7 @@ const successMessage = ref('');
 // Eğer Docker Build sırasında bu değişken gelmezse, eski adresi yedek olarak kullanır.
 const API_BASE_URL = import.meta.env.VITE_API_URL || 'http://localhost:8080';
 
+
 // Giriş işlemini yürüten fonksiyon
 const loginUser = async () => {
   if (!form.value.email || !form.value.password) {
@@ -64,9 +65,11 @@ const loginUser = async () => {
   errorMessage.value = '';
   successMessage.value = '';
 
+  let response;
+
   try {
     // 💡 GÜNCELLENDİ: API_BASE_URL değişkenini kullan
-    const response = await axios.post(`${API_BASE_URL}/api/auth/login`, {
+    response = await axios.post(`${API_BASE_URL}/api/auth/login`, {
       email: form.value.email,
       password: form.value.password,
     });
@@ -75,6 +78,8 @@ const loginUser = async () => {
     successMessage.value = `Giriş başarılı! Hoş geldiniz: ${response.data.name}`;
     errorMessage.value = '';
 
+    emit('login-success', response.data);
+
     form.value.email = '';
     form.value.password = '';
 
@@ -82,7 +87,6 @@ const loginUser = async () => {
     if (error.response && error.response.data) {
       errorMessage.value = error.response.data;
     } else {
-      // Daha anlaşılır bir hata mesajı ekleyelim
       errorMessage.value = `API bağlantı hatası oluştu. Lütfen Backend (8080) ve DB'nin çalıştığını kontrol edin. Detay: ${error.message}`;
     }
     successMessage.value = '';
