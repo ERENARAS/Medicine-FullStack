@@ -144,9 +144,11 @@ Kayıt olma ve giriş yapma işlemlerinde, kullanıcının rolü e-posta uzantı
 
 ## Tasarım Ve Geliştirme Aşamaları
 
-(https://www.figma.com/design/phx1H4o1xFT7dnYISNJg9M/Medicine-ATM?node-id=0-1&p=f&t=oemMXaWQ9aVfgV5o-0)
+[Figma](https://www.figma.com/design/phx1H4o1xFT7dnYISNJg9M/Medicine-ATM?node-id=0-1&p=f&t=oemMXaWQ9aVfgV5o-0)
 
-(https://stitch.withgoogle.com/projects/9416732583162682670)
+[Stitch](https://stitch.withgoogle.com/projects/9416732583162682670)
+
+[Jira](https://erenaras16-1765030083119.atlassian.net/jira/software/projects/SCRUM/summary)
 
 
 
