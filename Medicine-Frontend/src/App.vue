@@ -5,7 +5,6 @@
     <Login v-else-if="currentMode === 'login'" @switch-mode="switchMode" @login-success="handleLoginSuccess" />
 
     <DoctorDashboard v-else-if="currentUser.role === 'doctor'" :user="currentUser" @logout="handleLogout" />
-    <PatientHome v-else-if="currentUser.role === 'patient'" :user="currentUser" @logout="handleLogout" />
     <div v-else>
       <h2>Hoş Geldiniz, {{ currentUser.name }}</h2>
       <p>Bu rol için henüz bir ana sayfa tasarlanmamıştır: {{ currentUser.role }}</p>
@@ -19,7 +18,6 @@ import { ref } from 'vue';
 import Signup from './components/Signup.vue';
 import Login from './components/Login.vue';
 import DoctorDashboard from './components/DoctorDashboard.vue';
-import PatientHome from "@/components/PatientHome.vue";
 
 // currentMode: 'login', 'signup', 'dashboard' vb.
 const currentMode = ref('login');

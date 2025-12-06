@@ -1,5 +1,6 @@
 package com.api.medicine.presentation.controllers;
 
+import com.api.medicine.application.use_cases.ViewPatientRecordUseCase;
 import com.api.medicine.application.use_cases.WritePrescriptionUseCase;
 import com.api.medicine.domain.entities.Doctor;
 import com.api.medicine.domain.entities.Patient;
@@ -11,6 +12,8 @@ import org.springframework.web.bind.annotation.*;
 import java.util.List;
 import java.util.Map;
 import java.util.UUID;
+import com.api.medicine.domain.entities.Medicine;
+import com.api.medicine.domain.factory.PrescriptionFactory;
 
 @RestController
 @RequestMapping("/api/doctor")
@@ -18,77 +21,72 @@ import java.util.UUID;
 public class DoctorController {
 
     private final WritePrescriptionUseCase writePrescriptionUseCase;
+    private final ViewPatientRecordUseCase viewPatientRecordUseCase; // Eksik UseCase
     private final PrescriptionRepository prescriptionRepository;
     private final UserRepository userRepository;
 
-    // ... Constructor injection (daha sonra ekleyelim)
-
-    public DoctorController(WritePrescriptionUseCase writePrescriptionUseCase, PrescriptionRepository prescriptionRepository, UserRepository userRepository) {
+    public DoctorController(WritePrescriptionUseCase writePrescriptionUseCase,
+                            ViewPatientRecordUseCase viewPatientRecordUseCase,
+                            PrescriptionRepository prescriptionRepository,
+                            UserRepository userRepository) {
         this.writePrescriptionUseCase = writePrescriptionUseCase;
+        this.viewPatientRecordUseCase = viewPatientRecordUseCase;
         this.prescriptionRepository = prescriptionRepository;
         this.userRepository = userRepository;
     }
 
-    // 1. Dashboard Verilerini Çekme (Basitleştirilmiş Versiyon)
-    @GetMapping("/dashboard/{doctorEmail}")
-    public ResponseEntity<?> getDashboard(@PathVariable String doctorEmail) {
-        // Normalde burada JWT/Session ile Doctor nesnesi alınır, şimdi repository'den çekeriz.
-        Doctor doctor = (Doctor) userRepository.findByEmail(doctorEmail).orElse(null);
+    // 1. Hasta Kay?tlar?n? G?r?nt?leme (Doctor Dashboard'da kullan?lmaz ama sistemde olmal?)
+    @GetMapping("/patient-record/{patientEmail}")
+    public ResponseEntity<?> viewPatientRecord(@PathVariable String patientEmail) {
+        Object user = userRepository.findByEmail(patientEmail).orElse(null);
 
-        if (doctor == null || !(doctor instanceof Doctor)) {
-            return ResponseEntity.status(403).body("Erişim Reddedildi.");
+        if (!(user instanceof Patient patient)) {
+            return ResponseEntity.status(404).body("Hasta bulunamad?.");
         }
 
-        // Basit bir dashboard yapısı döndürelim (Sadece tüm reçeteleri filtreleyelim)
-        List<Prescription> allPrescriptions = prescriptionRepository.getAll();
-
-        long todayCount = allPrescriptions.stream()
-                .filter(p -> p.getDoctor().getEmail().equals(doctorEmail))
-                .filter(p -> p.getDate().equals(java.time.LocalDate.now()))
-                .count();
-
-        // Daha fazla istatistik için filtreleme yapılabilir...
+        List<Prescription> history = viewPatientRecordUseCase.getPrescriptionHistory(patient);
 
         return ResponseEntity.ok(Map.of(
-                "todayPrescriptions", todayCount,
-                "allPrescriptions", allPrescriptions
+                "patient", patient,
+                "prescriptionHistory", history
         ));
     }
+
 
     // 2. Yeni Reçete Yazma (WritePrescriptionUseCase'i kullanır)
     @PostMapping("/write-prescription")
     public ResponseEntity<?> writePrescription(@RequestBody Map<String, Object> request) {
-        // İhtiyacınız olan alanlar: doctorEmail, patientEmail, medicineNames (List<String>)
+
         String doctorEmail = (String) request.get("doctorEmail");
         String patientEmail = (String) request.get("patientEmail");
         List<String> medicineNames = (List<String>) request.get("medicineNames");
 
-        // Doctor ve Patient'ı repository'den çekmek gerekir
         Doctor doctor = (Doctor) userRepository.findByEmail(doctorEmail).orElse(null);
         Patient patient = (Patient) userRepository.findByEmail(patientEmail).orElse(null);
 
         if (doctor == null || patient == null) {
-            return ResponseEntity.badRequest().body("Doktor veya Hasta bulunamadı.");
+            return ResponseEntity.badRequest().body("Doktor veya Hasta bulunamad?.");
         }
 
         try {
-            // Medicine listesini Map<String, Object> listesinden oluştur
-            List<com.api.medicine.domain.entities.Medicine> medicines = medicineNames.stream()
-                    .map(com.api.medicine.domain.entities.Medicine::new)
+            // Medicine listesini olu?tur (Gerçekte MedicineRepository'den çekilmeli)
+            List<Medicine> medicines = medicineNames.stream()
+                    .map(Medicine::new)
                     .toList();
 
-            // Reçete nesnesini oluştur
-            Prescription prescription = com.api.medicine.domain.factory.PrescriptionFactory.createPrescription(doctor, patient, medicines);
+            // Reçete nesnesini olu?tur (PrescriptionFactory kullan?m?)
+            Prescription prescription = PrescriptionFactory.createPrescription(doctor, patient, medicines);
 
-            // Use Case'i çalıştır (Alerji kontrolü burada yapılır)
+            // Use Case'i çal??t?r (Alerji kontrolü burada yap?l?r)
             boolean success = writePrescriptionUseCase.execute(prescription);
 
             if (success) {
-                return ResponseEntity.ok(Map.of("message", "Reçete başarıyla kaydedildi.", "prescriptionId", prescription.getId()));
+                return ResponseEntity.ok(Map.of("message", "Reçete ba?ar?yla kaydedildi.", "prescriptionId", prescription.getId()));
             } else {
-                return ResponseEntity.status(400).body("Reçete kaydedilemedi: Hastanın ilaca alerjisi var.");
+                return ResponseEntity.status(400).body("Reçete kaydedilemedi: Hastan?n ilaca alerjisi var.");
             }
         } catch (Exception e) {
+            // Reçete olu?turma s?ras?nda (Factory) veya use case'te hata olu?ursa yakala
             return ResponseEntity.internalServerError().body("Hata: " + e.getMessage());
         }
     }
