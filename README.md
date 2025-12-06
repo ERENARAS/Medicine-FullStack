@@ -140,6 +140,14 @@ Kayıt olma ve giriş yapma işlemlerinde, kullanıcının rolü e-posta uzantı
 | **Hasta** | `@pt.medicine`        |
 | **Eczane Personeli** | `@ph.medicine` | 
 
+---
+
+## Tasarım Ve Geliştirme Aşamaları
+
+(https://www.figma.com/design/phx1H4o1xFT7dnYISNJg9M/Medicine-ATM?node-id=0-1&p=f&t=oemMXaWQ9aVfgV5o-0)
+
+(https://stitch.withgoogle.com/projects/9416732583162682670)
+
 
 
 
