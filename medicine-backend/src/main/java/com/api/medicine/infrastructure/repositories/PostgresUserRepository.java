@@ -10,6 +10,7 @@ import com.api.medicine.infrastructure.repositories.jpa.JpaPatientRepository;
 import com.api.medicine.infrastructure.repositories.jpa.JpaPharmacyStaffRepository;
 import org.springframework.stereotype.Repository;
 
+import java.util.List;
 import java.util.Optional;
 
 @Repository
@@ -19,7 +20,6 @@ public class PostgresUserRepository implements UserRepository {
     private final JpaDoctorRepository doctorRepository;
     private final JpaPharmacyStaffRepository staffRepository;
 
-    // Constructor Injection: Spring bu 3 repository'yi otomatik dolduracak
     public PostgresUserRepository(JpaPatientRepository patientRepository,
                                   JpaDoctorRepository doctorRepository,
                                   JpaPharmacyStaffRepository staffRepository) {
@@ -30,7 +30,6 @@ public class PostgresUserRepository implements UserRepository {
 
     @Override
     public boolean save(User user) {
-        // Gelen user nesnesinin tipine göre ilgili tabloya kaydet
         if (user instanceof Patient) {
             patientRepository.save((Patient) user);
             return true;
@@ -46,16 +45,12 @@ public class PostgresUserRepository implements UserRepository {
 
     @Override
     public Optional<User> findByEmail(String email) {
-        // E-posta hangi tabloda varsa onu bulup döndür
-        // 1. Doktorda ara
         Optional<Doctor> doctor = doctorRepository.findByEmail(email);
         if (doctor.isPresent()) return Optional.of(doctor.get());
 
-        // 2. Hastada ara
         Optional<Patient> patient = patientRepository.findByEmail(email);
         if (patient.isPresent()) return Optional.of(patient.get());
 
-        // 3. Eczacıda ara
         Optional<PharmacyStaff> staff = staffRepository.findByEmail(email);
         if (staff.isPresent()) return Optional.of(staff.get());
 
@@ -67,5 +62,10 @@ public class PostgresUserRepository implements UserRepository {
         return doctorRepository.existsByEmail(email) ||
                 patientRepository.existsByEmail(email) ||
                 staffRepository.existsByEmail(email);
+    }
+
+    @Override
+    public List<Patient> findAllPatients() {
+        return patientRepository.findAll();
     }
 }
