@@ -1,53 +1,65 @@
 <template>
-  <div class="doctor-dashboard-container">
-    <div class="navbar">
+  <v-container fluid class="doctor-dashboard-container">
+
+    <v-sheet class="navbar" color="transparent">
       <h1 class="logo">Medicine</h1>
       <div class="nav-links">
-        <a href="#">Reçete Yaz</a>
+        <a href="#" @click="$emit('switch-mode', 'write-prescription')">Reçete Yaz</a>
         <a href="#">ATM Konumları</a>
         <a href="#">Hakkında</a>
-        <button @click="$emit('logout')" class="logout-btn">Çıkış Yap</button>
+        <v-btn @click="$emit('logout')" class="logout-btn" variant="outlined" size="small">Çıkış Yap</v-btn>
       </div>
-    </div>
+    </v-sheet>
 
-    <div class="welcome-card">
+    <v-card class="welcome-card elevation-4">
       <div class="card-content">
         <div class="info-section">
-          <p class="tagline">⚕️ Kolay Ve Güvenli</p>
-          <p class="tagline">🩺 Hızlı İlaç Yazma Sistemi</p>
+          <p class="tagline">
+            <v-icon color="#a2d6b8" size="small">mdi-medical-bag</v-icon> Kolay Ve Güvenli
+          </p>
+          <p class="tagline ml-4">
+            <v-icon color="#a2d6b8" size="small">mdi-stethoscope</v-icon> Hızlı İlaç Yazma Sistemi
+          </p>
           <h2 class="welcome-message">Merhaba, Dr. {{ doctorName }}</h2>
         </div>
         <div class="action-section">
-          <button class="action-btn">Reçete Yaz</button>
+          <v-btn class="action-btn elevation-2" @click="$emit('switch-mode', 'write-prescription')">
+            Reçete Yaz
+          </v-btn>
         </div>
       </div>
-    </div>
+    </v-card>
 
     <div class="content-grid">
+
       <div class="stats-column">
-        <div class="stat-card today">
+        <v-card class="stat-card today elevation-1">
           <h3>Bugün Yazılan Reçeteler</h3>
           <p class="count">{{ dashboardData.todayPrescriptions }}</p>
-        </div>
-        <div class="stat-card allergies">
+        </v-card>
+        <v-card class="stat-card allergies elevation-1">
           <h3>Alerjisi Olan Hastalar</h3>
-          <p class="count">?</p>
-        </div>
-        <div class="stat-card last-7">
+          <p class="count">{{ dashboardData.allergicPatientCount }}</p>
+        </v-card>
+        <v-card class="stat-card last-7 elevation-1">
           <h3>Son 7 Gün</h3>
           <p class="count">{{ dashboardData.last7DaysPrescriptions }}</p>
-        </div>
-        <div class="stat-card last-7">
+        </v-card>
+        <v-card class="stat-card last-7 elevation-1">
           <h3>Son 30 Gün</h3>
           <p class="count">{{ dashboardData.last30DaysPrescriptions }}</p>
-        </div>
+        </v-card>
       </div>
 
-      <div class="recent-activities">
+      <v-card class="recent-activities elevation-2">
         <h3>Son İşlemler</h3>
-        <p v-if="isLoading">Veriler yükleniyor...</p>
+        <p v-if="isLoading">
+          <v-progress-linear indeterminate color="primary"></v-progress-linear>
+          Veriler yükleniyor...
+        </p>
         <p v-else-if="errorMessage" class="error-message">Hata: {{ errorMessage }}</p>
-        <table v-else class="activity-table">
+
+        <v-table v-else class="activity-table">
           <thead>
           <tr>
             <th>Adı</th>
@@ -66,26 +78,26 @@
             <td>{{ item.date }}</td>
           </tr>
           <tr v-if="recentActivities.length === 0">
-            <td colspan="5">Henüz reçete kaydı bulunamadı.</td>
+            <td colspan="5" class="text-center">Henüz reçete kaydı bulunamadı.</td>
           </tr>
           </tbody>
-        </table>
-      </div>
+        </v-table>
+      </v-card>
     </div>
-  </div>
-
+  </v-container>
 </template>
 
 <script setup>
 import { ref, onMounted, computed } from 'vue';
 import axios from 'axios';
+// Vuetify bileşenleri import edilmedi, bu yüzden VBtn, VCard vs. burada tanımlanmadı.
+// Ancak main.js'de global olarak kaydedildiği varsayıldı.
 
-// Props: Giriş yapan doktor bilgisi (App.vue tarafından sağlanacak)
 const props = defineProps({
   user: Object,
 });
 
-const emit = defineEmits(['logout']);
+const emit = defineEmits(['logout', 'switch-mode']);
 
 const doctorName = computed(() => props.user?.name || 'Kullanıcı');
 const doctorEmail = computed(() => props.user?.email || '');
@@ -94,13 +106,13 @@ const dashboardData = ref({
   todayPrescriptions: 0,
   last7DaysPrescriptions: 0,
   last30DaysPrescriptions: 0,
+  allergicPatientCount: '?',
 });
 
 const recentActivities = ref([]);
 const isLoading = ref(true);
 const errorMessage = ref('');
 
-// Docker veya Vite ortam değişkeninden API URL'ini al
 const API_BASE_URL = import.meta.env.VITE_API_URL || 'http://localhost:8080';
 
 const fetchDashboardData = async () => {
@@ -113,7 +125,6 @@ const fetchDashboardData = async () => {
 
     const allPrescriptions = data.allPrescriptions || [];
 
-    // İstatistikler için tarihleri hesapla
     const today = new Date().toISOString().substring(0, 10);
     const sevenDaysAgo = new Date();
     sevenDaysAgo.setDate(sevenDaysAgo.getDate() - 7);
@@ -121,31 +132,27 @@ const fetchDashboardData = async () => {
     thirtyDaysAgo.setDate(thirtyDaysAgo.getDate() - 30);
 
 
-    // Tablo verilerini hazırlama (Sadece reçete listesi geldiği için)
     const activityList = allPrescriptions
         .map(p => {
-          // Patient verisi backendden DoctorController'da kısmen doldurulduğu için
-          // bazı alanlar eksik olabilir. Basitleştirilmiş ad/soyad ayırma yapalım.
-          const parts = p.patient.name.split(' ');
           return {
-            patientName: parts[0] || '',
-            patientSurname: parts.slice(1).join(' ') || '',
-            patientAge: '?', // Yaş verisi henüz gelmiyor
-            prescriptionId: p.id,
+            patientName: p.name || '',
+            patientSurname: p.surname || '',
+            patientAge: p.age || '?',
+            prescriptionId: p.prescriptionCode || '',
             date: p.date,
             timestamp: new Date(p.date),
           }
         })
-        .sort((a, b) => b.timestamp - a.timestamp) // Tarihe göre tersten sırala (en yeni üste)
-        .slice(0, 6); // İlk 6 taneyi al
+        .sort((a, b) => b.timestamp - a.timestamp)
+        .slice(0, 6);
 
     recentActivities.value = activityList;
 
-
-    // İstatistikleri hesapla
+    // Düzeltme: allergicPatientCount verisi eşleniyor
     dashboardData.value.todayPrescriptions = allPrescriptions.filter(p => p.date === today).length;
     dashboardData.value.last7DaysPrescriptions = allPrescriptions.filter(p => new Date(p.date) >= sevenDaysAgo).length;
     dashboardData.value.last30DaysPrescriptions = allPrescriptions.filter(p => new Date(p.date) >= thirtyDaysAgo).length;
+    dashboardData.value.allergicPatientCount = data.allergicPatientCount;
 
 
   } catch (error) {
@@ -157,7 +164,6 @@ const fetchDashboardData = async () => {
 };
 
 onMounted(() => {
-  // Sadece kullanıcı (doktor) bilgisi varsa veri çek
   if (doctorEmail.value) {
     fetchDashboardData();
   }
@@ -166,12 +172,28 @@ onMounted(() => {
 </script>
 
 <style scoped>
+/* Vuetify bileşenlerinin üstündeki temel layout'u korur */
 .doctor-dashboard-container {
-  width: 1200px;
-  margin: 0 auto;
-  padding: 20px;
-  font-family: sans-serif;
+  /* SAYFA ARKAPLANI */
+  min-height: 100vh;
+  min-width: 100vw;    /* Tüm ekran yüksekliği */
   background-color: #ECEEF9;
+
+  /* Üstteki boşluğu kontrol et */
+  padding-top: 15px;
+  padding-bottom: 40px;
+
+  /* İçerikleri ortaya topla */
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  font-family: sans-serif;
+}
+
+/* Container içindeki asıl içerik genişliği */
+.doctor-dashboard-container > * {
+  width: 100%;
+  max-width: 1200px;              /* Eski 1200px burada */
 }
 
 /* Navbar */
@@ -179,11 +201,8 @@ onMounted(() => {
   display: flex;
   justify-content: space-between;
   align-items: center;
-  padding: 10px 0;
   border-bottom: 1px solid #eee;
   margin-bottom: 20px;
-
-
 }
 .logo {
   font-size: 1.8em;
@@ -203,20 +222,25 @@ onMounted(() => {
   margin-left: 30px;
   background: none;
   border: 1px solid #d6a2b8;
-  color: #d6a2b8;
+  color: #d6a2b8 !important; /* Vuetify'nin kendi renklerini override eder */
   padding: 5px 15px;
   border-radius: 4px;
   cursor: pointer;
+  text-transform: none; /* Vuetify'den gelen varsayılan büyük harf kullanımını düzeltir */
+}
+.logout-btn:hover {
+  background-color: #d6a2b8;
+  color: white !important;
 }
 
 /* Welcome Card */
 .welcome-card {
-  background-color: #252B61;
+  background-color: #252B61 !important; /* Vuetify card için !important eklendi */
   border-radius: 16px;
   padding: 40px;
   color: #fff;
   margin-bottom: 30px;
-  box-shadow: 0 4px 10px rgba(0, 0, 0, 0.15);
+  /* elevation-4 kullanıldığı için box-shadow kaldırıldı, ancak eski stil korunuyor */
 }
 
 .card-content {
@@ -244,22 +268,19 @@ onMounted(() => {
   align-items: center;
 }
 .action-btn {
-  background-color: #d6a2b8;
-  color: #fff;
+  background-color: #d6a2b8 !important;
+  color: #fff !important;
   border: none;
-  padding: 12px 30px;
-  border-radius: 8px;
+  padding: 24px 30px;
+  border-radius: 16px;
   font-size: 1.1em;
   cursor: pointer;
   transition: background-color 0.3s;
+  text-transform: none;
+  align-content: center;
 }
 .action-btn:hover {
-  background-color: #b8869c;
-}
-.arrow-btn {
-  font-size: 1.5em;
-  margin-left: 15px;
-  cursor: pointer;
+  background-color: #b8869c !important;
 }
 
 /* Content Grid */
@@ -276,10 +297,10 @@ onMounted(() => {
 }
 
 .stat-card {
-  background-color: #fff;
+  background-color: #fff !important;
   border-radius: 8px;
   padding: 20px;
-  box-shadow: 0 2px 5px rgba(0, 0, 0, 0.05);
+  /* elevation-1 kullanıldığı için box-shadow kaldırıldı */
   display: flex;
   flex-direction: column;
   justify-content: space-between;
@@ -302,10 +323,10 @@ onMounted(() => {
 
 .recent-activities {
   flex: 2;
-  background-color: #fff;
+  background-color: #fff !important;
   border-radius: 12px;
   padding: 30px;
-  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.05);
+  /* elevation-2 kullanıldığı için box-shadow kaldırıldı */
 }
 
 .recent-activities h3 {
@@ -335,7 +356,7 @@ onMounted(() => {
   border-bottom: none;
 }
 .error-message {
-  color: #a2d6b8;
+  color: #721c24;
   font-weight: bold;
 }
 </style>
