@@ -1,18 +1,23 @@
 package com.api.medicine.domain.entities;
+
 import com.api.medicine.domain.factory.PrescriptionFactory;
 import com.api.medicine.domain.interfaces.User;
+import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import jakarta.persistence.*;
 
 import java.util.List;
+
 /**
  * Doctor sınıfı, sistemdeki doktor kullanıcılarını temsil eder.
  * Doktorlar hastalara reçete yazabilir.
  *
- * Bu sınıf sadece domain düzeyindeki davranışları içerir ve veri erişimi (repository gibi) içermez.
+ * Bu sınıf sadece domain düzeyindeki davranışları içerir ve veri erişimi
+ * (repository gibi) içermez.
  */
 
 @Entity
 @Table(name = "doctor")
+@JsonIgnoreProperties({ "hibernateLazyInitializer", "handler" })
 public class Doctor implements User {
 
     @Id
@@ -41,9 +46,10 @@ public class Doctor implements User {
         this.password = password;
     }
 
-    public Doctor(String name){
+    public Doctor(String name) {
         this.name = name;
     }
+
     public Doctor() {
     }
 
@@ -51,23 +57,27 @@ public class Doctor implements User {
      * Doktor, bir hasta için ilaç içeren bir reçete oluşturur.
      * Bu işlem PrescriptionFactory üzerinden gerçekleştirilir.
      *
-     * @param patient Reçete yazılacak hasta
+     * @param patient   Reçete yazılacak hasta
      * @param medicines Reçeteye eklenecek ilaçlar
      * @return Oluşturulan Prescription nesnesi
      */
     public Prescription writePrescription(Patient patient, List<Medicine> medicines) {
         return PrescriptionFactory.createPrescription(this, patient, medicines);
     }
+
     @Override
     public void login() {
         System.out.println("Doctor logged the system");
     }
+
     public String getName() {
         return name;
     }
+
     public Long getId() {
         return id;
     }
+
     public void setId(Long id) {
         this.id = id;
     }
