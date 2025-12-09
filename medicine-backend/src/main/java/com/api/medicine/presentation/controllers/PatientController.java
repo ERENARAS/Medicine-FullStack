@@ -1,0 +1,119 @@
+package com.api.medicine.presentation.controllers;
+
+import com.api.medicine.application.use_cases.DispenseMedicineUseCase;
+import com.api.medicine.application.use_cases.ViewPatientRecordUseCase;
+import com.api.medicine.domain.entities.Patient;
+import com.api.medicine.domain.entities.Prescription;
+import com.api.medicine.domain.interfaces.User;
+import com.api.medicine.domain.interfaces.UserRepository;
+import org.springframework.http.ResponseEntity;
+import org.springframework.web.bind.annotation.*;
+
+import java.util.List;
+import java.util.Map;
+import java.util.Optional;
+
+@RestController
+@RequestMapping("/api/patient")
+@CrossOrigin(origins = { "http://localhost:5173", "http://localhost", "http://127.0.0.1" })
+public class PatientController {
+
+    private final ViewPatientRecordUseCase viewPatientRecordUseCase;
+    private final DispenseMedicineUseCase dispenseMedicineUseCase;
+    private final UserRepository userRepository;
+
+    public PatientController(ViewPatientRecordUseCase viewPatientRecordUseCase,
+            DispenseMedicineUseCase dispenseMedicineUseCase,
+            UserRepository userRepository) {
+        this.viewPatientRecordUseCase = viewPatientRecordUseCase;
+        this.dispenseMedicineUseCase = dispenseMedicineUseCase;
+        this.userRepository = userRepository;
+    }
+
+    /**
+     * GET /api/patient/my-prescriptions/{email}
+     * Retrieves the prescription history for the patient with the given email.
+     *
+     * @param email Patient's email address
+     * @return List of prescriptions or 404 if patient not found
+     */
+    @GetMapping("/my-prescriptions/{email}")
+    public ResponseEntity<?> getMyPrescriptions(@PathVariable String email) {
+        Optional<User> userOptional = userRepository.findByEmail(email);
+
+        if (userOptional.isEmpty()) {
+            return ResponseEntity.status(404).body("Hasta bulunamadı.");
+        }
+
+        User user = userOptional.get();
+
+        if (!(user instanceof Patient patient)) {
+            return ResponseEntity.status(404).body("Kullanıcı hasta değil.");
+        }
+
+        List<Prescription> prescriptions = viewPatientRecordUseCase.getPrescriptionHistory(patient);
+
+        return ResponseEntity.ok(prescriptions);
+    }
+
+    /**
+     * GET /api/patient/info/{email}
+     * Retrieves patient information including allergies.
+     *
+     * @param email Patient's email address
+     * @return Patient entity or 404 if not found
+     */
+    @GetMapping("/info/{email}")
+    public ResponseEntity<?> getPatientInfo(@PathVariable String email) {
+        Optional<User> userOptional = userRepository.findByEmail(email);
+
+        if (userOptional.isEmpty()) {
+            return ResponseEntity.status(404).body("Hasta bulunamadı.");
+        }
+
+        User user = userOptional.get();
+
+        if (!(user instanceof Patient patient)) {
+            return ResponseEntity.status(404).body("Kullanıcı hasta değil.");
+        }
+
+        return ResponseEntity.ok(patient);
+    }
+
+    /**
+     * POST /api/patient/dispense
+     * Dispenses medicine for a prescription at a specific ATM.
+     * Request body should contain: prescriptionId, patientEmail, and optional
+     * atmId.
+     * If atmId is not provided, defaults to 1L.
+     *
+     * @param request Map containing prescriptionId, patientEmail, and optional
+     *                atmId
+     * @return Success or error message based on the dispense operation result
+     */
+    @PostMapping("/dispense")
+    public ResponseEntity<?> dispenseMedicine(@RequestBody Map<String, Object> request) {
+        String prescriptionId = (String) request.get("prescriptionId");
+        String patientEmail = (String) request.get("patientEmail");
+
+        // Default atmId to 1L if not provided
+        Long atmId = request.containsKey("atmId")
+                ? Long.valueOf(request.get("atmId").toString())
+                : 1L;
+
+        if (prescriptionId == null || patientEmail == null) {
+            return ResponseEntity.badRequest().body("Reçete ID ve hasta e-postası gereklidir.");
+        }
+
+        boolean success = dispenseMedicineUseCase.execute(prescriptionId, patientEmail, atmId);
+
+        if (success) {
+            return ResponseEntity.ok(Map.of(
+                    "message", "İlaçlar başarıyla teslim edildi.",
+                    "prescriptionId", prescriptionId));
+        } else {
+            return ResponseEntity.status(400).body(
+                    "İlaç teslim edilemedi. Reçete bulunamadı, stok yetersiz veya hasta bilgisi eşleşmedi.");
+        }
+    }
+}

@@ -32,6 +32,10 @@
                               @switch-mode="switchMode"
                               @confirm-prescription="handleConfirmAndSubmitPrescription" />
 
+    <PatientDashboard v-else-if="currentMode === 'dashboard' && currentUser.role === 'patient'"
+                      :user="currentUser"
+                      @logout="handleLogout" />
+
     <div v-else>
       <h2>Hoş Geldiniz, {{ currentUser.name }}</h2>
       <p>Bu rol için henüz bir ana sayfa tasarlanmamıştır: {{ currentUser.role }}</p>
@@ -46,6 +50,7 @@ import axios from 'axios';
 import Signup from './components/Signup.vue';
 import Login from './components/Login.vue';
 import DoctorDashboard from './components/DoctorDashboard.vue';
+import PatientDashboard from './components/PatientDashboard.vue';
 import WritePrescription from './components/WritePrescription.vue';
 import MedicineSelection from './components/MedicineSelection.vue';
 import PrescriptionConfirmation from './components/PrescriptionConfirmation.vue';
@@ -76,8 +81,8 @@ const handleLoginSuccess = (user) => {
     currentUser.value.role = 'pharmacy';
   }
 
-  // Rol doktor ise dashboard'a yönlendir
-  if (currentUser.value.role === 'doctor') {
+  // Rol doktor veya hasta ise dashboard'a yönlendir
+  if (currentUser.value.role === 'doctor' || currentUser.value.role === 'patient') {
     currentMode.value = 'dashboard';
     console.log(`Giriş Başarılı. Rol: ${currentUser.value.role}`);
   } else {
