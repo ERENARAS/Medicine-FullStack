@@ -1,6 +1,5 @@
 <template>
   <v-container fluid class="confirmation-container fill-height pa-0">
-    <!-- Navbar -->
     <v-sheet class="navbar-area d-flex justify-space-between align-center px-6">
       <h1 class="logo">Medicine</h1>
       <div class="nav-links">
@@ -11,14 +10,11 @@
       </div>
     </v-sheet>
 
-    <!-- Main Content -->
     <v-row no-gutters class="main-content-row justify-center">
       <v-col cols="12" class="d-flex flex-column align-center" style="max-width: 1000px; width: 100%;">
-        
-        <!-- Main Dark Blue Card -->
+
         <v-card class="main-card rounded-xl pa-8" elevation="4">
-          
-          <!-- Patient Info Section -->
+
           <div class="patient-info-section mb-6">
              <v-row align="center">
                 <v-col cols="auto">
@@ -28,7 +24,6 @@
                 </v-col>
                 <v-col>
                    <v-row dense class="text-white">
-                      <!-- Left Column -->
                       <v-col cols="12" md="6">
                          <div class="d-flex align-center mb-2">
                             <span class="info-label">Hastanın Adı Soyadı :</span>
@@ -43,7 +38,6 @@
                             <span class="info-value pl-2">{{ diagnosis }}</span>
                          </div>
                       </v-col>
-                      <!-- Right Column -->
                        <v-col cols="12" md="6">
                          <div class="d-flex align-center mb-2 justify-md-end">
                             <span class="info-label">Tarih :</span>
@@ -61,7 +55,6 @@
              <v-divider class="mt-6 border-opacity-25" color="white"></v-divider>
           </div>
 
-          <!-- Medicines Section -->
           <div class="medicines-section">
             <h2 class="text-white text-h5 mb-4 font-weight-regular">İlaçlar</h2>
             
@@ -73,10 +66,19 @@
                      class="medicine-list-item mb-4 rounded-pill px-6 py-3"
                   >
                      <div class="d-flex align-center w-100 justify-space-between">
-                        <div class="d-flex align-center">
+                        <div class="d-flex align-center flex-grow-1">
                            <span class="index-number text-h5 font-weight-bold mr-6">{{ index + 1 }}.</span>
-                           <span class="medicine-name text-h6 font-weight-bold">{{ medicine.name }} 1 MG 50 Tablet D:1 2X1 Tok</span> 
-                           <!-- Note: Dosage info is hardcoded for visual match as per design requirements, or we can make it dynamic if we had inputs -->
+                           <span class="medicine-name text-h6 font-weight-bold mr-4" style="min-width: 200px;">{{ medicine.name }}</span>
+                           <v-text-field
+                               v-model="medicine.instruction"
+                               placeholder="Kullanım Talimatı (Örn: 1x1 Tok)"
+                               variant="plain"
+                               density="compact"
+                               hide-details
+                               bg-color="transparent"
+                               class="flex-grow-1 mr-4 text-white custom-input"
+                               style="max-width: 400px;"
+                           ></v-text-field>
                         </div>
                         <v-btn icon variant="text" size="small" density="comfortable" class="close-btn bg-white" @click="removeMedicine(index)">
                            <v-icon color="#333" size="small">mdi-close</v-icon>
@@ -94,7 +96,6 @@
 
         </v-card>
 
-        <!-- Start Approval Button (Outside card, bottom right aligned relative to container) -->
         <div class="d-flex justify-end w-100 mt-4 mr-0" style="max-width: 1000px;">
            <v-btn
              size="x-large"
@@ -137,21 +138,18 @@ const tempPrescriptionId = Math.floor(Math.random() * 90000000) + 10000000;
 
 const fullName = computed(() => {
    if (props.patient && props.patient.name) {
-      // Use real name, assuming name and surname are combined in `name` field or separated
       return props.patient.surname ? `${props.patient.name} ${props.patient.surname}` : props.patient.name;
    }
    return '';
 });
 
 const diagnosis = computed(() => {
-   // Generate diagnosis from unique treatments of selected medicines
    const treatments = medicines.value
       .map(m => m.treatment)
-      .filter(t => t && t !== 'Genel Tedavi' && t !== 'Tedavi bilgisi yok'); // filter out generic or empty
+      .filter(t => t && t !== 'Genel Tedavi' && t !== 'Tedavi bilgisi yok');
    
    if (treatments.length === 0) return 'Genel Muayene';
-   
-   // Get unique treatments
+
    const uniqueTreatments = [...new Set(treatments)];
    return uniqueTreatments.join(', ');
 });
@@ -167,7 +165,6 @@ const confirmPrescription = () => {
    }
    
    isSubmitting.value = true;
-   // Simulate small delay or just emit
    emit('confirm-prescription', medicines.value);
 };
 
@@ -175,7 +172,7 @@ const confirmPrescription = () => {
 
 <style scoped>
 .confirmation-container {
-  background-color: #ECEEF9; /* Light greyish blue background */
+  background-color: #ECEEF9;
   min-height: 100vh;
   padding-top: 20px;
 }
@@ -223,7 +220,7 @@ const confirmPrescription = () => {
 }
 
 .main-card {
-  background-color: #202449 !important; /* Dark blue */
+  background-color: #202449 !important;
   width: 100%;
   border-radius: 24px !important;
   min-height: 600px;
@@ -250,7 +247,7 @@ const confirmPrescription = () => {
 }
 
 .medicine-list-item {
-  background-color: #A2D6B8 !important; /* The green color from design */
+  background-color: #A2D6B8 !important;
   color: white;
   transition: transform 0.2s ease;
 }
@@ -277,7 +274,18 @@ const confirmPrescription = () => {
 .approve-btn {
    font-size: 1.2rem;
    text-transform: none;
-   background-color: #252B61; /* Same as card but detached */
+   background-color: #252B61;
    box-shadow: 0 4px 15px rgba(37, 43, 97, 0.3);
+}
+
+.custom-input :deep(input) {
+  color: white !important;
+  font-size: 1.1rem;
+  font-weight: 500;
+}
+
+.custom-input :deep(input::placeholder) {
+  color: rgba(255, 255, 255, 0.7) !important;
+  opacity: 1;
 }
 </style>
