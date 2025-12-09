@@ -1,6 +1,7 @@
 package com.api.medicine.domain.entities;
 
 import com.api.medicine.domain.interfaces.User;
+import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import jakarta.persistence.*;
 
 import java.util.ArrayList;
@@ -15,6 +16,7 @@ import java.util.List;
 
 @Entity
 @Table(name = "patient")
+@JsonIgnoreProperties({ "hibernateLazyInitializer", "handler" })
 public class Patient implements User {
 
     @Id
@@ -29,11 +31,9 @@ public class Patient implements User {
     @Column(name = "allergy_name")
     private List<String> allergicMedicines;
 
-    @Column(unique = true,  nullable = false)
+    @Column(unique = true, nullable = false)
     private String email;
     private String password;
-
-
 
     public String getEmail() {
         return email;
@@ -54,44 +54,55 @@ public class Patient implements User {
     public Patient() {
         this.allergicMedicines = new ArrayList<>();
     }
+
     public Patient(String name) {
         this.name = name;
         this.allergicMedicines = new ArrayList<>();
     }
+
     @Override
     public void login() {
         System.out.println("Patient logged the system");
     }
+
     public String getName() {
         return name;
     }
+
     public List<String> getAllergicMedicines() {
         return allergicMedicines;
     }
+
     public void setAllergicMedicines(List<String> allergicMedicines) {
         this.allergicMedicines = allergicMedicines;
     }
+
     public float getAmount() {
         return amount;
     }
-   public void setAmount(float amount) {
+
+    public void setAmount(float amount) {
         this.amount = amount;
     }
+
     public void setName(String name) {
         this.name = name;
     }
+
     public Long getId() {
         return id;
     }
+
     public void setId(Long id) {
         this.id = id;
     }
+
     /**
      * ilaç alım işleminden sonra ödeme olarak azaltma işlemi
      *
      * @param amount azaltılacack miktar
      */
-    public void decreaseAmount(float amount){
+    public void decreaseAmount(float amount) {
         this.amount -= amount;
     }
 
