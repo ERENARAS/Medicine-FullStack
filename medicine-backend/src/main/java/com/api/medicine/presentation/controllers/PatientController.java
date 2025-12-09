@@ -1,6 +1,8 @@
 package com.api.medicine.presentation.controllers;
 
+import com.api.medicine.application.use_cases.AddAllergyUseCase;
 import com.api.medicine.application.use_cases.DispenseMedicineUseCase;
+import com.api.medicine.application.use_cases.RemoveAllergyUseCase;
 import com.api.medicine.application.use_cases.ViewPatientRecordUseCase;
 import com.api.medicine.domain.entities.Patient;
 import com.api.medicine.domain.entities.Prescription;
@@ -20,13 +22,19 @@ public class PatientController {
 
     private final ViewPatientRecordUseCase viewPatientRecordUseCase;
     private final DispenseMedicineUseCase dispenseMedicineUseCase;
+    private final AddAllergyUseCase addAllergyUseCase;
+    private final RemoveAllergyUseCase removeAllergyUseCase;
     private final UserRepository userRepository;
 
     public PatientController(ViewPatientRecordUseCase viewPatientRecordUseCase,
             DispenseMedicineUseCase dispenseMedicineUseCase,
+            AddAllergyUseCase addAllergyUseCase,
+            RemoveAllergyUseCase removeAllergyUseCase,
             UserRepository userRepository) {
         this.viewPatientRecordUseCase = viewPatientRecordUseCase;
         this.dispenseMedicineUseCase = dispenseMedicineUseCase;
+        this.addAllergyUseCase = addAllergyUseCase;
+        this.removeAllergyUseCase = removeAllergyUseCase;
         this.userRepository = userRepository;
     }
 
@@ -114,6 +122,62 @@ public class PatientController {
         } else {
             return ResponseEntity.status(400).body(
                     "İlaç teslim edilemedi. Reçete bulunamadı, stok yetersiz veya hasta bilgisi eşleşmedi.");
+        }
+    }
+
+    /**
+     * POST /api/patient/allergies/add
+     * Adds an allergy to the patient's allergy list.
+     *
+     * @param request Map containing patientEmail and allergyName
+     * @return Success or error message
+     */
+    @PostMapping("/allergies/add")
+    public ResponseEntity<?> addAllergy(@RequestBody Map<String, String> request) {
+        String patientEmail = request.get("patientEmail");
+        String allergyName = request.get("allergyName");
+
+        if (patientEmail == null || allergyName == null || allergyName.trim().isEmpty()) {
+            return ResponseEntity.badRequest().body("Hasta e-postası ve alerji adı gereklidir.");
+        }
+
+        boolean success = addAllergyUseCase.execute(patientEmail, allergyName);
+
+        if (success) {
+            return ResponseEntity.ok(Map.of(
+                    "message", "Alerji başarıyla eklendi.",
+                    "allergyName", allergyName.trim()));
+        } else {
+            return ResponseEntity.status(400).body(
+                    "Alerji eklenemedi. Hasta bulunamadı veya alerji zaten mevcut.");
+        }
+    }
+
+    /**
+     * DELETE /api/patient/allergies/remove
+     * Removes an allergy from the patient's allergy list.
+     *
+     * @param request Map containing patientEmail and allergyName
+     * @return Success or error message
+     */
+    @DeleteMapping("/allergies/remove")
+    public ResponseEntity<?> removeAllergy(@RequestBody Map<String, String> request) {
+        String patientEmail = request.get("patientEmail");
+        String allergyName = request.get("allergyName");
+
+        if (patientEmail == null || allergyName == null || allergyName.trim().isEmpty()) {
+            return ResponseEntity.badRequest().body("Hasta e-postası ve alerji adı gereklidir.");
+        }
+
+        boolean success = removeAllergyUseCase.execute(patientEmail, allergyName);
+
+        if (success) {
+            return ResponseEntity.ok(Map.of(
+                    "message", "Alerji başarıyla silindi.",
+                    "allergyName", allergyName.trim()));
+        } else {
+            return ResponseEntity.status(400).body(
+                    "Alerji silinemedi. Hasta bulunamadı veya alerji mevcut değil.");
         }
     }
 }

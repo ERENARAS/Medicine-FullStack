@@ -44,12 +44,28 @@
               <v-progress-linear indeterminate color="primary"></v-progress-linear>
               Veriler yükleniyor...
             </p>
-            <div v-else-if="patientInfo && patientInfo.allergicMedicines && patientInfo.allergicMedicines.length > 0" class="allergies-list">
-              <span v-for="(allergy, index) in patientInfo.allergicMedicines" :key="index" class="allergy-tag">
-                {{ allergy }}
-              </span>
+            <div v-else>
+              <!-- Allergy input and add button -->
+              <div class="allergy-input-container">
+                <input 
+                  v-model="newAllergy" 
+                  type="text" 
+                  class="allergy-input" 
+                  placeholder="Yeni alerji ekle (örn: Penisilin)"
+                  @keyup.enter="addAllergy"
+                />
+                <button class="add-allergy-btn" @click="addAllergy">Ekle</button>
+              </div>
+              
+              <!-- Allergies list -->
+              <div v-if="patientInfo && patientInfo.allergicMedicines && patientInfo.allergicMedicines.length > 0" class="allergies-list">
+                <span v-for="(allergy, index) in patientInfo.allergicMedicines" :key="index" class="allergy-tag">
+                  {{ allergy }}
+                  <button class="remove-allergy-btn" @click="removeAllergy(allergy)" title="Sil">×</button>
+                </span>
+              </div>
+              <p v-else class="no-data">Kayıtlı alerji bulunmuyor.</p>
             </div>
-            <p v-else class="no-data">Kayıtlı alerji bulunmuyor.</p>
           </v-card>
 
           <!-- Recent Dispenses Card -->
@@ -243,6 +259,7 @@ const selectedPrescription = ref(null);
 const dispensing = ref(false);
 const dispenseError = ref('');
 const dispenseSuccess = ref('');
+const newAllergy = ref('');
 
 const API_BASE_URL = import.meta.env.VITE_API_URL || 'http://localhost:8080';
 
@@ -351,6 +368,52 @@ const cancelDispense = () => {
   manualAtmId.value = 1;
   dispenseError.value = '';
   dispenseSuccess.value = '';
+};
+
+// Add allergy
+const addAllergy = async () => {
+  if (!newAllergy.value || newAllergy.value.trim() === '') {
+    alert('Lütfen alerji adı giriniz.');
+    return;
+  }
+
+  try {
+    const response = await axios.post(`${API_BASE_URL}/api/patient/allergies/add`, {
+      patientEmail: patientEmail.value,
+      allergyName: newAllergy.value.trim()
+    });
+
+    // Refresh patient info to show new allergy
+    await fetchPatientInfo();
+    newAllergy.value = ''; // Clear input
+    
+  } catch (error) {
+    console.error("Alerji ekleme hatası:", error);
+    alert(error.response?.data || 'Alerji eklenemedi. Lütfen tekrar deneyin.');
+  }
+};
+
+// Remove allergy
+const removeAllergy = async (allergyName) => {
+  if (!confirm(`"${allergyName}" alerjisini silmek istediğinizden emin misiniz?`)) {
+    return;
+  }
+
+  try {
+    await axios.delete(`${API_BASE_URL}/api/patient/allergies/remove`, {
+      data: {
+        patientEmail: patientEmail.value,
+        allergyName: allergyName
+      }
+    });
+
+    // Refresh patient info to remove allergy from list
+    await fetchPatientInfo();
+    
+  } catch (error) {
+    console.error("Alerji silme hatası:", error);
+    alert(error.response?.data || 'Alerji silinemedi. Lütfen tekrar deneyin.');
+  }
 };
 
 onMounted(() => {
@@ -521,6 +584,62 @@ onMounted(() => {
   border-radius: 20px;
   font-size: 0.9em;
   font-weight: 500;
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.allergy-input-container {
+  display: flex;
+  gap: 10px;
+  margin-bottom: 15px;
+}
+
+.allergy-input {
+  flex: 1;
+  padding: 10px 15px;
+  border: 1px solid rgba(255, 255, 255, 0.3);
+  border-radius: 8px;
+  background-color: rgba(255, 255, 255, 0.1);
+  color: #fff;
+  font-size: 0.9em;
+}
+
+.allergy-input::placeholder {
+  color: rgba(255, 255, 255, 0.5);
+}
+
+.add-allergy-btn {
+  background-color: #a2d6b8;
+  color: #252B61;
+  border: none;
+  padding: 10px 20px;
+  border-radius: 8px;
+  font-size: 0.9em;
+  font-weight: 600;
+  cursor: pointer;
+  transition: background-color 0.3s;
+}
+
+.add-allergy-btn:hover {
+  background-color: #8bc4a3;
+}
+
+.remove-allergy-btn {
+  background: none;
+  border: none;
+  color: #252B61;
+  font-size: 1.2em;
+  font-weight: bold;
+  cursor: pointer;
+  padding: 0;
+  margin-left: 5px;
+  line-height: 1;
+  transition: color 0.3s;
+}
+
+.remove-allergy-btn:hover {
+  color: #dc3545;
 }
 
 .recent-dispenses {
