@@ -17,7 +17,7 @@ import java.time.temporal.ChronoUnit;
 
 @RestController
 @RequestMapping("/api/doctor/dashboard")
-@CrossOrigin(origins = {"http://localhost:5173", "http://localhost", "http://127.0.0.1"})
+@CrossOrigin(origins = { "http://localhost:5173", "http://localhost", "http://127.0.0.1" })
 public class DashboardController {
 
     private final PrescriptionRepository prescriptionRepository;
@@ -64,8 +64,15 @@ public class DashboardController {
                     Patient patient = p.getPatient();
 
                     Map<String, Object> transactionMap = new HashMap<>();
-                    transactionMap.put("name", patient.getName().split(" ")[0]);
-                    transactionMap.put("surname", patient.getName().split(" ")[1]);
+
+                    // Safely parse patient name
+                    String fullName = patient.getName() != null ? patient.getName() : "";
+                    String[] nameParts = fullName.split(" ");
+                    String firstName = nameParts.length > 0 ? nameParts[0] : "";
+                    String lastName = nameParts.length > 1 ? nameParts[1] : "";
+
+                    transactionMap.put("name", firstName);
+                    transactionMap.put("surname", lastName);
                     transactionMap.put("age", 35);
                     transactionMap.put("prescriptionCode", p.getId().toString().substring(0, 8));
                     transactionMap.put("date", p.getDate().toString());
