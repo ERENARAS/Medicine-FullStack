@@ -6,6 +6,8 @@ import com.api.medicine.application.use_cases.RemoveAllergyUseCase;
 import com.api.medicine.application.use_cases.ViewPatientRecordUseCase;
 import com.api.medicine.domain.entities.Patient;
 import com.api.medicine.domain.entities.Prescription;
+import com.api.medicine.domain.interfaces.ATMRepository;
+import com.api.medicine.domain.interfaces.PrescriptionRepository;
 import com.api.medicine.domain.interfaces.User;
 import com.api.medicine.domain.interfaces.UserRepository;
 import org.springframework.http.ResponseEntity;
@@ -25,17 +27,23 @@ public class PatientController {
     private final AddAllergyUseCase addAllergyUseCase;
     private final RemoveAllergyUseCase removeAllergyUseCase;
     private final UserRepository userRepository;
+    private final ATMRepository atmRepository;
+    private final PrescriptionRepository prescriptionRepository;
 
     public PatientController(ViewPatientRecordUseCase viewPatientRecordUseCase,
             DispenseMedicineUseCase dispenseMedicineUseCase,
             AddAllergyUseCase addAllergyUseCase,
             RemoveAllergyUseCase removeAllergyUseCase,
-            UserRepository userRepository) {
+            UserRepository userRepository,
+            ATMRepository atmRepository,
+            PrescriptionRepository prescriptionRepository) {
         this.viewPatientRecordUseCase = viewPatientRecordUseCase;
         this.dispenseMedicineUseCase = dispenseMedicineUseCase;
         this.addAllergyUseCase = addAllergyUseCase;
         this.removeAllergyUseCase = removeAllergyUseCase;
         this.userRepository = userRepository;
+        this.atmRepository = atmRepository;
+        this.prescriptionRepository = prescriptionRepository;
     }
 
     /**
@@ -107,7 +115,7 @@ public class PatientController {
         // Default atmId to 1L if not provided
         Long atmId = request.containsKey("atmId")
                 ? Long.valueOf(request.get("atmId").toString())
-                : 1L;
+                : 2L;
 
         if (prescriptionId == null || patientEmail == null) {
             return ResponseEntity.badRequest().body("Reçete ID ve hasta e-postası gereklidir.");
@@ -122,6 +130,49 @@ public class PatientController {
         } else {
             return ResponseEntity.status(400).body(
                     "İlaç teslim edilemedi. Reçete bulunamadı, stok yetersiz veya hasta bilgisi eşleşmedi.");
+        }
+    }
+
+    /**
+     * GET /api/patient/check-stock/{atmId}/{prescriptionId}
+     * Checks stock availability for medicines in a prescription at a specific ATM.
+     *
+     * @param atmId          ATM ID
+     * @param prescriptionId Prescription ID
+     * @return Map of medicine names to stock availability
+     */
+    @GetMapping("/check-stock/{atmId}/{prescriptionId}")
+    public ResponseEntity<?> checkStock(@PathVariable Long atmId, @PathVariable String prescriptionId) {
+        try {
+            // Get prescription
+            Optional<Prescription> optionalPrescription = prescriptionRepository.findByID(prescriptionId);
+
+            if (optionalPrescription.isEmpty()) {
+                return ResponseEntity.status(404).body("Reçete bulunamadı.");
+            }
+
+            // Get ATM
+            Optional<com.api.medicine.domain.entities.ATM> optionalATM = atmRepository.findById(atmId);
+
+            if (optionalATM.isEmpty()) {
+                return ResponseEntity.status(404).body("ATM bulunamadı.");
+            }
+
+            Prescription prescription = optionalPrescription.get();
+            com.api.medicine.domain.entities.ATM atm = optionalATM.get();
+
+            // Check stock for each medicine
+            Map<String, Object> stockInfo = new java.util.HashMap<>();
+            for (com.api.medicine.domain.entities.Medicine medicine : prescription.getMedicines()) {
+                int available = atm.getStock().getOrDefault(medicine.getName(), 0);
+                stockInfo.put(medicine.getName(), Map.of(
+                        "available", available > 0,
+                        "quantity", available));
+            }
+
+            return ResponseEntity.ok(stockInfo);
+        } catch (Exception e) {
+            return ResponseEntity.status(500).body("Stok kontrolü yapılamadı: " + e.getMessage());
         }
     }
 

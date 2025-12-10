@@ -144,63 +144,88 @@
     </div>
 
     <!-- DISPENSE CONFIRMATION VIEW -->
-    <div v-else-if="currentView === 'dispense'">
-      <div class="dispense-container">
-        <h1 class="dispense-title">İlaç Alma Onayı</h1>
+    <div v-else-if="currentView === 'dispense'" class="dispense-view">
+      <div class="dispense-container-new">
+        <div class="dispense-header">
+          <h1 class="dispense-title-new">İlaç Alma Onayı</h1>
+          <p class="dispense-subtitle">Lütfen reçete detaylarını, ilaç stok durumunu ve alerji bilgilerinizi kontrol ediniz.</p>
+        </div>
         
-        <div class="dispense-sections">
-          <!-- Prescription Details -->
-          <v-card class="dispense-card elevation-2">
-            <h3>Reçete Detayları</h3>
-            <p><strong>Reçete ID:</strong> {{ selectedPrescription.id.substring(0, 12) }}...</p>
-            <p><strong>Doktor:</strong> Dr. {{ selectedPrescription.doctor.name }}</p>
-            <p><strong>Tarih:</strong> {{ formatDate(selectedPrescription.date) }}</p>
-          </v-card>
+        <div class="dispense-content">
+          <!-- Prescription Details Card -->
+          <div class="dispense-card-new">
+            <h3 class="card-title-new">Reçete Detayları</h3>
+            <div class="prescription-details-grid">
+              <div class="detail-item">
+                <span class="detail-label">Reçete ID:</span>
+                <span class="detail-value">{{ selectedPrescription.id.substring(0, 12) }}</span>
+              </div>
+              <div class="detail-item">
+                <span class="detail-label">Doktor Adı:</span>
+                <span class="detail-value">Dr. {{ selectedPrescription.doctor.name }}</span>
+              </div>
+              <div class="detail-item">
+                <span class="detail-label">Tarih:</span>
+                <span class="detail-value">{{ formatDate(selectedPrescription.date) }}</span>
+              </div>
+            </div>
+          </div>
 
-          <!-- Medicine and Stock Status -->
-          <v-card class="dispense-card elevation-2">
-            <h3>İlaç ve Stok Durumu</h3>
-            <table class="medicine-table">
-              <thead>
-                <tr>
-                  <th>İlaç Adı</th>
-                  <th>Stok Durumu</th>
-                  <th>Alerji Kontrolü</th>
-                </tr>
-              </thead>
-              <tbody>
-                <tr v-for="medicine in selectedPrescription.medicines" :key="medicine.id">
-                  <td>{{ medicine.name }}</td>
-                  <td>
-                    <span class="stock-available">Stokta Var</span>
-                  </td>
-                  <td>
-                    <span v-if="checkAllergy(medicine.name)" class="allergy-warning">⚠️ Alerjik</span>
-                    <span v-else class="allergy-safe">✓ Güvenli</span>
-                  </td>
-                </tr>
-              </tbody>
-            </table>
-          </v-card>
+          <!-- Medicine and Stock Status Table -->
+          <div class="dispense-card-new">
+            <h3 class="card-title-new">İlaç ve Stok Durumu</h3>
+            <div class="medicine-table-container">
+              <table class="medicine-table-new">
+                <thead>
+                  <tr>
+                    <th>İLAÇ ADI</th>
+                    <th>DOZAJ BİLGİSİ</th>
+                    <th>STOK DURUMU (ATM)</th>
+                    <th>ALERJİ KONTROLÜ</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  <tr v-for="medicine in selectedPrescription.medicines" :key="medicine.id" :class="{ 'allergy-row': checkAllergy(medicine.name) }">
+                    <td :class="{ 'medicine-name-allergy': checkAllergy(medicine.name) }">{{ medicine.name }}</td>
+                    <td :class="{ 'dosage-allergy': checkAllergy(medicine.name) }">{{ medicine.treatment || '500mg' }}</td>
+                    <td>
+                      <span class="stock-badge stock-available-new">✓ Stokta Var</span>
+                    </td>
+                    <td>
+                      <span v-if="checkAllergy(medicine.name)" class="allergy-badge allergy-warning-new">▲ Alerjik</span>
+                      <span v-else class="allergy-badge allergy-safe-new">● Güvenli</span>
+                    </td>
+                  </tr>
+                </tbody>
+              </table>
+            </div>
+          </div>
 
-          <!-- Confirmation and Payment -->
-          <v-card class="dispense-card elevation-2">
-            <h3>Onay ve Ödeme</h3>
-            <p v-if="dispensing">
-              <v-progress-linear indeterminate color="primary"></v-progress-linear>
+          <!-- Confirmation and Payment Card -->
+          <div class="dispense-card-new">
+            <h3 class="card-title-new">Onay ve Ödeme</h3>
+            <p class="payment-info">Onaylamanız durumunda, stokta olan ve alerjik olmayan ilaçlarınız ATM haznesine düşecektir. Ödeme <strong>125.50 TL</strong> kartınızdan tahsil edilecektir.</p>
+            
+            <div v-if="hasAllergicMedicines" class="allergy-warning-box">
+              <v-icon color="#dc3545" size="small">mdi-alert-circle</v-icon>
+              <span>Reçetenizde alerjiniz olan bir ilaç bulunduğu için işleme devam edilememektedir. Lütfen doktorunuzla iletişime geçin.</span>
+            </div>
+
+            <p v-if="dispensing" class="loading-message">
+              <v-progress-linear indeterminate color="#4ade80"></v-progress-linear>
               İşlem gerçekleştiriliyor...
             </p>
-            <p v-if="dispenseError" class="error-message">{{ dispenseError }}</p>
-            <p v-if="dispenseSuccess" class="success-message">{{ dispenseSuccess }}</p>
-            <div class="confirmation-actions">
-              <v-btn class="confirm-btn" @click="confirmDispense" :disabled="dispensing">
+            <p v-if="dispenseError" class="error-message-new">{{ dispenseError }}</p>
+            <p v-if="dispenseSuccess" class="success-message-new">{{ dispenseSuccess }}</p>
+
+            <div class="confirmation-actions-new">
+              <v-btn class="cancel-btn-new" @click="cancelDispense" :disabled="dispensing">İptal</v-btn>
+              <v-btn class="confirm-btn-new" @click="confirmDispense" :disabled="dispensing || hasAllergicMedicines">
+                <v-icon left size="small">mdi-check-circle</v-icon>
                 Onayla ve İlaçları Ver
               </v-btn>
-              <v-btn class="cancel-btn" @click="cancelDispense" :disabled="dispensing">
-                İptal
-              </v-btn>
             </div>
-          </v-card>
+          </div>
         </div>
       </div>
     </div>
@@ -271,6 +296,14 @@ const pendingPrescriptions = computed(() => {
 // Computed: Dispensed prescriptions (for recent dispenses)
 const dispensedPrescriptions = computed(() => {
   return prescriptions.value.filter(p => p.dispensed).slice(0, 5);
+});
+
+// Computed: Check if selected prescription has allergic medicines
+const hasAllergicMedicines = computed(() => {
+  if (!selectedPrescription.value || !patientInfo.value) return false;
+  return selectedPrescription.value.medicines.some(medicine => 
+    checkAllergy(medicine.name)
+  );
 });
 
 // Fetch patient info (including allergies)
@@ -435,7 +468,6 @@ onMounted(() => {
   flex-direction: column;
   align-items: center;
   font-family: sans-serif;
-  overflow: hidden;
 }
 
 .patient-dashboard-container > * {
@@ -994,5 +1026,238 @@ onMounted(() => {
 
 .back-btn:hover {
   background-color: #b8869c !important;
+}
+
+/* NEW DISPENSE CONFIRMATION VIEW */
+.dispense-view {
+  background-color: #1a1d2e;
+  min-height: 100vh;
+  padding: 20px;
+}
+
+.dispense-container-new {
+  max-width: 900px;
+  margin: 0 auto;
+}
+
+.dispense-header {
+  margin-bottom: 30px;
+}
+
+.dispense-title-new {
+  font-size: 2.5em;
+  color: #fff;
+  margin: 0 0 10px 0;
+  font-weight: 300;
+}
+
+.dispense-subtitle {
+  color: #9ca3af;
+  font-size: 1em;
+  margin: 0;
+}
+
+.dispense-content {
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+}
+
+.dispense-card-new {
+  background-color: #252b3d;
+  border-radius: 12px;
+  padding: 25px;
+  border: 1px solid #374151;
+}
+
+.card-title-new {
+  font-size: 1.3em;
+  color: #fff;
+  margin: 0 0 20px 0;
+  font-weight: 500;
+}
+
+.prescription-details-grid {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 20px;
+}
+
+.detail-item {
+  display: flex;
+  flex-direction: column;
+  gap: 5px;
+}
+
+.detail-label {
+  color: #9ca3af;
+  font-size: 0.9em;
+}
+
+.detail-value {
+  color: #fff;
+  font-size: 1em;
+  font-weight: 500;
+}
+
+.medicine-table-container {
+  overflow-x: auto;
+}
+
+.medicine-table-new {
+  width: 100%;
+  border-collapse: collapse;
+}
+
+.medicine-table-new thead th {
+  text-align: left;
+  padding: 12px;
+  color: #9ca3af;
+  font-size: 0.85em;
+  font-weight: 600;
+  border-bottom: 2px solid #374151;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
+.medicine-table-new tbody td {
+  padding: 15px 12px;
+  color: #fff;
+  font-size: 0.95em;
+  border-bottom: 1px solid #374151;
+}
+
+.medicine-table-new tbody tr.allergy-row {
+  background-color: rgba(220, 53, 69, 0.05);
+}
+
+.medicine-name-allergy {
+  color: #ef4444 !important;
+  font-weight: 600;
+}
+
+.dosage-allergy {
+  color: #ef4444 !important;
+}
+
+.stock-badge {
+  display: inline-block;
+  padding: 4px 12px;
+  border-radius: 12px;
+  font-size: 0.85em;
+  font-weight: 600;
+}
+
+.stock-available-new {
+  background-color: rgba(74, 222, 128, 0.15);
+  color: #4ade80;
+}
+
+.stock-unavailable-new {
+  background-color: rgba(239, 68, 68, 0.15);
+  color: #ef4444;
+}
+
+.allergy-badge {
+  display: inline-block;
+  padding: 4px 12px;
+  border-radius: 12px;
+  font-size: 0.85em;
+  font-weight: 600;
+}
+
+.allergy-safe-new {
+  background-color: rgba(59, 130, 246, 0.15);
+  color: #3b82f6;
+}
+
+.allergy-warning-new {
+  background-color: rgba(239, 68, 68, 0.15);
+  color: #ef4444;
+}
+
+.payment-info {
+  color: #d1d5db;
+  font-size: 0.95em;
+  line-height: 1.6;
+  margin: 0 0 15px 0;
+}
+
+.payment-info strong {
+  color: #fff;
+  font-weight: 600;
+}
+
+.allergy-warning-box {
+  background-color: rgba(239, 68, 68, 0.1);
+  border: 1px solid #ef4444;
+  border-radius: 8px;
+  padding: 12px 15px;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin: 15px 0;
+  color: #fca5a5;
+  font-size: 0.9em;
+}
+
+.loading-message {
+  color: #9ca3af;
+  margin: 15px 0;
+}
+
+.error-message-new {
+  color: #ef4444;
+  background-color: rgba(239, 68, 68, 0.1);
+  padding: 12px;
+  border-radius: 8px;
+  margin: 15px 0;
+}
+
+.success-message-new {
+  color: #4ade80;
+  background-color: rgba(74, 222, 128, 0.1);
+  padding: 12px;
+  border-radius: 8px;
+  margin: 15px 0;
+}
+
+.confirmation-actions-new {
+  display: flex;
+  gap: 15px;
+  margin-top: 20px;
+}
+
+.cancel-btn-new {
+  background-color: #6b7280 !important;
+  color: #fff !important;
+  padding: 12px 30px;
+  border-radius: 8px;
+  text-transform: none;
+  font-weight: 500;
+}
+
+.cancel-btn-new:hover {
+  background-color: #4b5563 !important;
+}
+
+.confirm-btn-new {
+  background-color: #4ade80 !important;
+  color: #1a1d2e !important;
+  padding: 12px 30px;
+  border-radius: 8px;
+  text-transform: none;
+  font-weight: 600;
+  flex: 1;
+}
+
+.confirm-btn-new:hover {
+  background-color: #22c55e !important;
+}
+
+.confirm-btn-new:disabled {
+  background-color: #374151 !important;
+  color: #6b7280 !important;
+  opacity: 0.5;
 }
 </style>
