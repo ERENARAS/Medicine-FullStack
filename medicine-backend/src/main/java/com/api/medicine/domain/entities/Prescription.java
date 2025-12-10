@@ -36,6 +36,9 @@ public class Prescription {
     @JoinTable(name = "prescription_medicine", joinColumns = @JoinColumn(name = "prescription_id"), inverseJoinColumns = @JoinColumn(name = "medicine_id"))
     private List<Medicine> medicines;
 
+    @Column(nullable = true)
+    private Boolean dispensed = false;
+
     public Prescription() { // JPA için zorunlu boş constructor
     }
 
@@ -54,6 +57,7 @@ public class Prescription {
         this.doctor = doctor;
         this.patient = patient;
         this.medicines = medicines;
+        this.dispensed = false;
     }
 
     public String getInfo() {
@@ -78,5 +82,13 @@ public class Prescription {
 
     public List<Medicine> getMedicines() {
         return medicines;
+    }
+
+    public Boolean getDispensed() {
+        return Boolean.TRUE.equals(dispensed);
+    }
+
+    public void setDispensed(Boolean dispensed) {
+        this.dispensed = dispensed;
     }
 }

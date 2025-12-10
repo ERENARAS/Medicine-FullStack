@@ -28,6 +28,7 @@ public class ATM {
 
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "responsible_staff_id")
+    @com.fasterxml.jackson.annotation.JsonIgnore // jackson bir json objesi olustururken bu fieldi ignore eder
     private PharmacyStaff responsibleStaff;
 
     public ATM() {
@@ -59,6 +60,7 @@ public class ATM {
     public Long getId() {
         return id;
     }
+
     public String getLocation() {
         return location;
     }
@@ -74,9 +76,11 @@ public class ATM {
     public void setResponsibleStaff(PharmacyStaff responsibleStaff) {
         this.responsibleStaff = responsibleStaff;
     }
+
     public boolean removeStock(String medicineName, int amount) {
         int current = stock.getOrDefault(medicineName, 0);
-        if (current < amount) return false;
+        if (current < amount)
+            return false;
         stock.put(medicineName, current - amount);
         return true;
     }

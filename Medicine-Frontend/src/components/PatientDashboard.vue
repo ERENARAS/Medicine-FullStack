@@ -189,7 +189,8 @@
                     <td :class="{ 'medicine-name-allergy': checkAllergy(medicine.name) }">{{ medicine.name }}</td>
                     <td :class="{ 'dosage-allergy': checkAllergy(medicine.name) }">{{ medicine.treatment || '500mg' }}</td>
                     <td>
-                      <span class="stock-badge stock-available-new">✓ Stokta Var</span>
+                      <span v-if="stockStatus[medicine.name]" class="stock-badge stock-available-new">✓ Stokta Var</span>
+                      <span v-else class="stock-badge stock-unavailable-new" style="background-color: #ffebee; color: #dc3545;">✖ Stokta Yok</span>
                     </td>
                     <td>
                       <span v-if="checkAllergy(medicine.name)" class="allergy-badge allergy-warning-new">▲ Alerjik</span>
@@ -220,7 +221,7 @@
 
             <div class="confirmation-actions-new">
               <v-btn class="cancel-btn-new" @click="cancelDispense" :disabled="dispensing">İptal</v-btn>
-              <v-btn class="confirm-btn-new" @click="confirmDispense" :disabled="dispensing || hasAllergicMedicines">
+              <v-btn class="confirm-btn-new" @click="confirmDispense" :disabled="dispensing || hasAllergicMedicines || hasStockIssues">
                 <v-icon left size="small">mdi-check-circle</v-icon>
                 Onayla ve İlaçları Ver
               </v-btn>
@@ -235,22 +236,16 @@
       <v-card class="nearby-card elevation-4">
         <h2>Yakınımdaki ATM'ler</h2>
         <div class="nearby-list">
-          <div class="atm-item">
+          <p v-if="isLoadingATMs">ATM'ler yükleniyor...</p>
+          <div v-else-if="atms.length > 0" v-for="atm in atms" :key="atm.id" class="atm-item">
             <v-icon color="#a2d6b8" size="large">mdi-map-marker</v-icon>
             <div class="atm-info">
-              <h4>ATM #1 - Merkez Eczanesi</h4>
-              <p>Adres: Atatürk Cad. No:15, Merkez</p>
-              <p>Mesafe: 0.5 km</p>
+              <h4>ATM #{{ atm.id }} - {{ atm.location }}</h4>
+              <p>Adres: {{ atm.location }}</p>
+              <p>ID: {{ atm.id }}</p>
             </div>
           </div>
-          <div class="atm-item">
-            <v-icon color="#a2d6b8" size="large">mdi-map-marker</v-icon>
-            <div class="atm-info">
-              <h4>ATM #2 - Sağlık Eczanesi</h4>
-              <p>Adres: İstiklal Cad. No:42, Merkez</p>
-              <p>Mesafe: 1.2 km</p>
-            </div>
-          </div>
+          <p v-else>Kayıtlı ATM bulunamadı.</p>
         </div>
         <v-btn class="back-btn" @click="currentView = 'home'">Ana Sayfaya Dön</v-btn>
       </v-card>
@@ -285,6 +280,9 @@ const dispensing = ref(false);
 const dispenseError = ref('');
 const dispenseSuccess = ref('');
 const newAllergy = ref('');
+const stockStatus = ref({});
+const atms = ref([]);
+const isLoadingATMs = ref(false);
 
 const API_BASE_URL = import.meta.env.VITE_API_URL || 'http://localhost:8080';
 
@@ -303,6 +301,13 @@ const hasAllergicMedicines = computed(() => {
   if (!selectedPrescription.value || !patientInfo.value) return false;
   return selectedPrescription.value.medicines.some(medicine => 
     checkAllergy(medicine.name)
+  );
+});
+
+const hasStockIssues = computed(() => {
+  if (!selectedPrescription.value) return false;
+  return selectedPrescription.value.medicines.some(medicine => 
+    stockStatus.value[medicine.name] === false
   );
 });
 
@@ -354,12 +359,35 @@ const selectPrescriptionForDispense = (prescription) => {
 };
 
 // Proceed to dispense view
-const proceedToDispense = () => {
+const proceedToDispense = async () => {
   if (!manualAtmId.value) {
     alert('Lütfen ATM ID giriniz.');
     return;
   }
+  
+  // Check stock before proceeding
+  await checkStockStatus();
+  
   currentView.value = 'dispense';
+};
+
+// Check stock status
+const checkStockStatus = async () => {
+  stockStatus.value = {};
+  if (!selectedPrescription.value) return;
+
+  const medicineNames = selectedPrescription.value.medicines.map(m => m.name);
+
+  try {
+    const response = await axios.post(`${API_BASE_URL}/api/atm/check-stock`, {
+      atmId: manualAtmId.value,
+      medicineNames: medicineNames
+    });
+    stockStatus.value = response.data;
+  } catch (error) {
+    console.error("Stok kontrolü hatası:", error);
+    // In case of error, you might want to show a message or assume false
+  }
 };
 
 // Confirm dispense
@@ -448,6 +476,27 @@ const removeAllergy = async (allergyName) => {
     alert(error.response?.data || 'Alerji silinemedi. Lütfen tekrar deneyin.');
   }
 };
+
+// Fetch ATMs
+const fetchATMs = async () => {
+  isLoadingATMs.value = true;
+  try {
+    const response = await axios.get(`${API_BASE_URL}/api/atm/all`);
+    atms.value = response.data;
+  } catch (error) {
+    console.error("ATM listesi çekilemedi:", error);
+  } finally {
+    isLoadingATMs.value = false;
+  }
+};
+
+// Watch for view change to fetch ATMs
+import { watch } from 'vue';
+watch(currentView, (newView) => {
+  if (newView === 'nearby') {
+    fetchATMs();
+  }
+});
 
 onMounted(() => {
   if (patientEmail.value) {

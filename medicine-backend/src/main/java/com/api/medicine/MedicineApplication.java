@@ -12,17 +12,19 @@ public class MedicineApplication {
 	}
 
 	@org.springframework.context.annotation.Bean
-	public CommandLineRunner demo(com.api.medicine.domain.interfaces.MedicineRepository repository) {
+	public CommandLineRunner demo(com.api.medicine.domain.interfaces.MedicineRepository medicineRepository) {
 		return (args) -> {
-			if (repository.count() == 0) {
-				repository.save(new com.api.medicine.domain.entities.Medicine("Saizen", "Büyüme Geriliği Tedavisi"));
-				repository.save(new com.api.medicine.domain.entities.Medicine("Augmentin", "Enfeksiyon Tedavisi"));
-				repository.save(new com.api.medicine.domain.entities.Medicine("Majezik", "Ağrı Kesici"));
-				repository.save(new com.api.medicine.domain.entities.Medicine("Parol", "Ateş Düşürücü"));
-				repository.save(new com.api.medicine.domain.entities.Medicine("Aspirin", "Kan Sulandırıcı"));
-				repository.save(new com.api.medicine.domain.entities.Medicine("Lansor", "Mide Koruyucu"));
-				repository.save(new com.api.medicine.domain.entities.Medicine("Crebros", "Alerji Tedavisi"));
-				repository.save(new com.api.medicine.domain.entities.Medicine("Ventolin", "Astım Tedavisi"));
+			if (medicineRepository.count() == 0) {
+				medicineRepository
+						.save(new com.api.medicine.domain.entities.Medicine("Saizen", "Büyüme Geriliği Tedavisi"));
+				medicineRepository
+						.save(new com.api.medicine.domain.entities.Medicine("Augmentin", "Enfeksiyon Tedavisi"));
+				medicineRepository.save(new com.api.medicine.domain.entities.Medicine("Majezik", "Ağrı Kesici"));
+				medicineRepository.save(new com.api.medicine.domain.entities.Medicine("Parol", "Ateş Düşürücü"));
+				medicineRepository.save(new com.api.medicine.domain.entities.Medicine("Aspirin", "Kan Sulandırıcı"));
+				medicineRepository.save(new com.api.medicine.domain.entities.Medicine("Lansor", "Mide Koruyucu"));
+				medicineRepository.save(new com.api.medicine.domain.entities.Medicine("Crebros", "Alerji Tedavisi"));
+				medicineRepository.save(new com.api.medicine.domain.entities.Medicine("Ventolin", "Astım Tedavisi"));
 			}
 		};
 	}

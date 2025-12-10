@@ -21,8 +21,8 @@ public class DispenseMedicineUseCase {
     private final UserRepository userRepository;
 
     public DispenseMedicineUseCase(PrescriptionRepository prescriptionRepository,
-                                   ATMRepository atmRepository,
-                                   UserRepository userRepository) {
+            ATMRepository atmRepository,
+            UserRepository userRepository) {
         this.prescriptionRepository = prescriptionRepository;
         this.atmRepository = atmRepository;
         this.userRepository = userRepository;
@@ -32,18 +32,22 @@ public class DispenseMedicineUseCase {
     public boolean execute(String prescriptionId, String patientEmail, Long atmId) {
 
         Optional<User> patient;
-        patient =  userRepository.findByEmail(patientEmail);
-        if (patient == null) return false;
+        patient = userRepository.findByEmail(patientEmail);
+        if (patient == null)
+            return false;
 
         Optional<Prescription> optionalPrescription = prescriptionRepository.findByID(prescriptionId);
-        if (optionalPrescription.isEmpty()) return false;
+        if (optionalPrescription.isEmpty())
+            return false;
 
         Prescription prescription = optionalPrescription.get();
 
-        if (!prescription.getPatient().getEmail().equals(patientEmail)) return false;
+        if (!prescription.getPatient().getEmail().equals(patientEmail))
+            return false;
 
         ATM atm = atmRepository.findById(atmId).orElse(null);
-        if (atm == null) return false;
+        if (atm == null)
+            return false;
 
         Map<String, Integer> stock = atm.getStock();
         List<Medicine> medicines = prescription.getMedicines();
@@ -59,8 +63,9 @@ public class DispenseMedicineUseCase {
             String name = med.getName();
             stock.put(name, stock.get(name) - 1);
         }
+        prescription.setDispensed(true);
+        prescriptionRepository.save(prescription);
         atmRepository.save(atm);
-        prescriptionRepository.delete(prescriptionId);
 
         return true;
     }
