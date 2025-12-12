@@ -36,6 +36,11 @@
                       :user="currentUser"
                       @logout="handleLogout" />
 
+    <PharmacyDashboard v-else-if="currentMode === 'dashboard' && currentUser.role === 'pharmacy'"
+                       :user="currentUser"
+                       @logout="handleLogout"
+                       @switch-mode="switchMode" />
+
     <div v-else>
       <h2>Hoş Geldiniz, {{ currentUser.name }}</h2>
       <p>Bu rol için henüz bir ana sayfa tasarlanmamıştır: {{ currentUser.role }}</p>
@@ -51,6 +56,7 @@ import Signup from './components/Signup.vue';
 import Login from './components/Login.vue';
 import DoctorDashboard from './components/DoctorDashboard.vue';
 import PatientDashboard from './components/PatientDashboard.vue';
+import PharmacyDashboard from './components/PharmacyDashboard.vue';
 import WritePrescription from './components/WritePrescription.vue';
 import MedicineSelection from './components/MedicineSelection.vue';
 import PrescriptionConfirmation from './components/PrescriptionConfirmation.vue';
@@ -69,26 +75,46 @@ const switchMode = (mode) => {
 
 // Login.vue'dan gelen başarılı giriş bilgisini yakalar
 const handleLoginSuccess = (user) => {
+  console.log('🔍 === LOGIN DEBUG BAŞLADI ===');
+  console.log('📦 Gelen user objesi:', user);
+  console.log('📧 Email:', user.email);
+  console.log('👤 Name:', user.name);
+  
   currentUser.value.name = user.name;
   currentUser.value.email = user.email;
 
   // E-posta uzantısına göre rol belirleme (Domain'deki mantığı taklit ederiz)
   if (user.email.endsWith('@dr.medicine')) {
     currentUser.value.role = 'doctor';
+    console.log('✅ Rol tespit edildi: DOCTOR');
   } else if (user.email.endsWith('@pt.medicine')) {
     currentUser.value.role = 'patient';
+    console.log('✅ Rol tespit edildi: PATIENT');
   } else if (user.email.endsWith('@ph.medicine')) {
     currentUser.value.role = 'pharmacy';
+    console.log('✅ Rol tespit edildi: PHARMACY');
+  } else {
+    console.log('❌ Rol tespit edilemedi! Email uzantısı tanınmıyor:', user.email);
   }
 
-  // Rol doktor veya hasta ise dashboard'a yönlendir
-  if (currentUser.value.role === 'doctor' || currentUser.value.role === 'patient') {
+  console.log('🎭 Belirlenen rol:', currentUser.value.role);
+  console.log('📍 Şu anki mod (önce):', currentMode.value);
+
+  // Rol doktor, hasta veya eczane ise dashboard'a yönlendir
+  if (currentUser.value.role === 'doctor' || currentUser.value.role === 'patient' || currentUser.value.role === 'pharmacy') {
     currentMode.value = 'dashboard';
-    console.log(`Giriş Başarılı. Rol: ${currentUser.value.role}`);
+    console.log('✅ Dashboard\'a yönlendiriliyor...');
+    console.log('📍 Yeni mod:', currentMode.value);
+    console.log(`✨ Giriş Başarılı. Rol: ${currentUser.value.role}`);
   } else {
     // Diğer roller için şimdilik bir placeholder göster
     currentMode.value = 'other';
+    console.log('⚠️ Bilinmeyen rol - OTHER moduna gidiliyor');
+    console.log('📍 Yeni mod:', currentMode.value);
   }
+  
+  console.log('🔍 === LOGIN DEBUG BİTTİ ===');
+  console.log('');
 };
 
 // Çıkış yapma işlemi
