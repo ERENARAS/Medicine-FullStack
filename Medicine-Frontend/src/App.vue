@@ -63,7 +63,7 @@ import PrescriptionConfirmation from './components/PrescriptionConfirmation.vue'
 
 // currentMode: 'login', 'signup', 'dashboard', 'write-prescription', 'medicine-selection', 'prescription-confirmation'
 const currentMode = ref('login');
-const currentUser = ref({ role: null, name: null, email: null }); // Giriş yapan kullanıcının bilgisi
+const currentUser = ref({ id: null, role: null, name: null, email: null }); // Giriş yapan kullanıcının bilgisi
 const selectedPatientForPrescription = ref(null); // Reçete yazılacak hasta bilgisi
 const selectedMedicinesForConfirmation = ref([]); // Onay sayfasında gösterilecek ilaçlar
 const API_BASE_URL = import.meta.env.VITE_API_URL || 'http://localhost:8080';
@@ -80,6 +80,9 @@ const handleLoginSuccess = (user) => {
   console.log('📧 Email:', user.email);
   console.log('👤 Name:', user.name);
   
+  console.log('👤 Name:', user.name);
+  
+  currentUser.value.id = user.id;
   currentUser.value.name = user.name;
   currentUser.value.email = user.email;
 

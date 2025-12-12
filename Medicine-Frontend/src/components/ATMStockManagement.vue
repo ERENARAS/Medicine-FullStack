@@ -12,8 +12,10 @@
       <div class="atm-selector">
         <label>ATM Seçimi:</label>
         <select v-model="selectedAtmId" @change="fetchStock" class="atm-select">
-          <option value="1">ATM #1</option>
-          <option value="2">ATM #2</option>
+          <option v-for="atm in atms" :key="atm.id" :value="atm.id">
+            ATM-{{ String(atm.id).padStart(3, '0') }} - {{ atm.location }}
+          </option>
+          <option v-if="atms.length === 0" disabled>ATM bulunamadı</option>
         </select>
       </div>
     </div>
@@ -180,11 +182,15 @@ import { ref, computed, onMounted } from 'vue';
 import axios from 'axios';
 
 const emit = defineEmits(['back']);
+const props = defineProps({
+  userId: [Number, String]
+});
 
 const API_BASE_URL = import.meta.env.VITE_API_URL || 'http://localhost:8080';
 
 // State
-const selectedAtmId = ref(1);
+const selectedAtmId = ref(null);
+const atms = ref([]);
 const stockData = ref({});
 const atmLocation = ref('Yükleniyor...');
 const isLoading = ref(true);
@@ -225,7 +231,26 @@ const filteredStock = computed(() => {
 });
 
 // Methods
+const fetchUserATMs = async () => {
+    if (!props.userId) return;
+    try {
+        const response = await axios.get(`${API_BASE_URL}/api/atm/all`, { params: { staffId: props.userId } });
+        atms.value = response.data;
+        if (atms.value.length > 0) {
+            selectedAtmId.value = atms.value[0].id;
+            fetchStock();
+        } else {
+            isLoading.value = false;
+            errorMessage.value = "Sorumlu olduğunuz ATM bulunamadı.";
+        }
+    } catch (error) {
+        console.error("ATM listesi alınamadı:", error);
+        errorMessage.value = "ATM listesi yüklenemedi.";
+    }
+};
+
 const fetchStock = async () => {
+  if (!selectedAtmId.value) return;
   isLoading.value = true;
   errorMessage.value = '';
   
@@ -301,7 +326,7 @@ const addStock = async () => {
 
 // Lifecycle
 onMounted(() => {
-  fetchStock();
+  fetchUserATMs();
 });
 </script>
 
