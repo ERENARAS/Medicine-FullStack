@@ -14,24 +14,20 @@ public class AddStockUseCase {
         this.atmRepository = atmRepository;
     }
 
-    public void execute(String medicineName, int quantity) {
-        // Eski load() yerine findById() kullanıyoruz.
-        // ID'si 1 olan ATM'yi varsayalım (Tek ATM senaryosu)
-        Long defaultAtmId = 1L;
-
-        ATM atm = atmRepository.findById(defaultAtmId).orElse(null);
-
-        if (atm == null) {
-            System.out.println("ATM bulunamadı!");
-            return;
+    public void execute(Long atmId, String medicineName, int quantity) {
+        // Validate inputs
+        if (atmId == null || medicineName == null || medicineName.trim().isEmpty() || quantity <= 0) {
+            throw new IllegalArgumentException("ATM ID, ilaç adı ve pozitif miktar gereklidir.");
         }
 
-        // ATM entity içindeki stok haritasını güncelle
-        atm.increaseStock(medicineName, quantity);
+        // Find ATM by ID
+        ATM atm = atmRepository.findById(atmId)
+                .orElseThrow(() -> new RuntimeException("ATM bulunamadı: ID = " + atmId));
 
-        // Eski saveATM() yerine standart save() kullanıyoruz
+        // Update stock using ATM entity method
+        atm.increaseStock(medicineName.trim(), quantity);
+
+        // Save updated ATM
         atmRepository.save(atm);
-
-        System.out.println(medicineName + " stoğa eklendi: +" + quantity);
     }
 }
