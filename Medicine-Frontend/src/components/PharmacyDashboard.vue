@@ -42,7 +42,7 @@
           </div>
         </v-card>
 
-        <v-card class="menu-card elevation-2">
+        <v-card class="menu-card elevation-2" @click="currentView = 'atm-locations'">
           <div class="card-icon">
             <v-icon size="48" color="#252B61">mdi-map-marker</v-icon>
           </div>
@@ -67,6 +67,14 @@
     <!-- Stock Management View -->
     <ATMStockManagement 
       v-else-if="currentView === 'stock-management'" 
+      :userId="props.user.id"
+      @back="currentView = 'dashboard'"
+    />
+
+    <!-- ATM Locations View -->
+    <ATMLocations 
+      v-else-if="currentView === 'atm-locations'" 
+      :userId="props.user.id"
       @back="currentView = 'dashboard'"
     />
 
@@ -76,6 +84,7 @@
 <script setup>
 import { ref, computed } from 'vue';
 import ATMStockManagement from './ATMStockManagement.vue';
+import ATMLocations from './ATMLocations.vue';
 
 const props = defineProps({
   user: Object,

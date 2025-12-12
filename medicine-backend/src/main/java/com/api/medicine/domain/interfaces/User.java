@@ -1,7 +1,8 @@
 package com.api.medicine.domain.interfaces;
 
 /**
- * User arayüzü, sisteme giriş yapabilen tüm kullanıcı türleri için ortak davranışı tanımlar.
+ * User arayüzü, sisteme giriş yapabilen tüm kullanıcı türleri için ortak
+ * davranışı tanımlar.
  *
  * Bu arayüzü uygulayan sınıflar (örneğin Doctor, Patient, PharmacyStaff),
  * login() metodunu kendilerine özgü şekilde override eder.
@@ -15,6 +16,7 @@ public interface User {
     void login();
 
     void setPassword(String password);
+
     void setEmail(String email);
 
     String getEmail();
@@ -22,4 +24,6 @@ public interface User {
     String getPassword();
 
     String getName();
+
+    Long getId();
 }
