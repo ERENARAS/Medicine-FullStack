@@ -57,5 +57,7 @@ services:
       # Backend ayağa kalktıktan sonra başla (zorunlu değil ama iyidir)
       - backend
 
+
+
 volumes:
   postgres_data:
