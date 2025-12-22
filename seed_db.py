@@ -90,13 +90,43 @@ while current_date < end_date:
         selected_meds = []
         
         for _ in range(num_items):
-            # Weighted selection: 80% chance for popular medicines
-            if popular_med_objs and random.random() < 0.8:
-                selected_meds.append(random.choice(popular_med_objs))
-            elif other_med_objs:
-                selected_meds.append(random.choice(other_med_objs))
-            elif popular_med_objs: # Fallback if no others
-                selected_meds.append(random.choice(popular_med_objs))
+            # Weighted selection:
+            # medicines have "popular" ones but we want varied distribution even among popular ones
+            # Weights:
+            # Saizen: 20%, Iliadin: 15%, Lansor: 12%, Glukofen: 10%, Arveles: 8%
+            # Diclomec: 8%, Parol: 8%, Majezik: 7%, Aspirin: 7%
+            # Others: 5% (total)
+            
+            rand_val = random.random()
+            selected = None
+            
+            # Simple weighted logic
+            # (In a real app, use weighted list, but here explicit checks for simplicity without deps)
+            if rand_val < 0.20: choice_name = "Saizen"
+            elif rand_val < 0.35: choice_name = "Iliadin"
+            elif rand_val < 0.47: choice_name = "Lansor"
+            elif rand_val < 0.57: choice_name = "Glukofen"
+            elif rand_val < 0.65: choice_name = "Arveles"
+            elif rand_val < 0.73: choice_name = "Diclomec"
+            elif rand_val < 0.81: choice_name = "Parol"
+            elif rand_val < 0.88: choice_name = "Majezik"
+            elif rand_val < 0.95: choice_name = "Aspirin"
+            else: choice_name = "OTHER"
+            
+            if choice_name == "OTHER" and other_med_objs:
+                selected = random.choice(other_med_objs)
+            else:
+                # Find the object for the name
+                candidates = [m for m in medicines if m['name'] == choice_name]
+                if candidates:
+                    selected = candidates[0]
+                elif popular_med_objs:
+                     selected = random.choice(popular_med_objs) # Fallback
+                elif medicines:
+                     selected = random.choice(medicines)
+            
+            if selected:
+                selected_meds.append(selected)
         
         # Deduplicate items in single prescription
         # (use id as key to deduplicate)
