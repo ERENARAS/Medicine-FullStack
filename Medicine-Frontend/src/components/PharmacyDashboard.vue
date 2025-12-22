@@ -52,13 +52,13 @@
           </div>
         </v-card>
 
-        <v-card class="menu-card elevation-2">
+        <v-card class="menu-card elevation-2" @click="currentView = 'reports-analysis'">
           <div class="card-icon">
-            <v-icon size="48" color="#252B61">mdi-chart-bar</v-icon>
+            <v-icon size="48" color="#252B61">mdi-chart-areaspline</v-icon>
           </div>
           <div class="card-text">
             <h3>Raporlar ve Analiz</h3>
-            <p>Stok hareketleri ve ATM kullanım verileri hakkında detaylı raporlar alın.</p>
+            <p>Stok hareketleri ve en çok satan ürünleri görüntüleyin.</p>
           </div>
         </v-card>
       </div>
@@ -78,13 +78,22 @@
       @back="currentView = 'dashboard'"
     />
 
+    <!-- Reports and Analysis View -->
+    <ReportsAndAnalysis 
+      v-else-if="currentView === 'reports-analysis'" 
+      :userId="props.user.id"
+      @back="currentView = 'dashboard'"
+    />
+
   </v-container>
 </template>
 
 <script setup>
-import { ref, computed } from 'vue';
+import { ref, computed, onMounted } from 'vue';
 import ATMStockManagement from './ATMStockManagement.vue';
 import ATMLocations from './ATMLocations.vue';
+import ReportsAndAnalysis from './ReportsAndAnalysis.vue';
+import axios from 'axios';
 
 const props = defineProps({
   user: Object,
@@ -94,7 +103,12 @@ const emit = defineEmits(['logout', 'switch-mode']);
 
 const pharmacyStaffName = computed(() => props.user?.name || 'Eczane Personeli');
 const currentView = ref('dashboard'); // 'dashboard' or 'stock-management'
+const API_BASE_URL = import.meta.env.VITE_API_URL || 'http://localhost:8080';
 
+// LIFECYCLE HOOK'U: Bileşen yüklendiğinde çalışır
+onMounted(() => {
+  // Dashboard yüklendiğinde gerekirse veri çekilebilir.
+});
 </script>
 
 <style scoped>
@@ -239,5 +253,12 @@ const currentView = ref('dashboard'); // 'dashboard' or 'stock-management'
   color: #666;
   line-height: 1.5;
   margin: 0;
+}
+
+
+
+.card-text .text-error {
+  color: #dc3545;
+  font-weight: 500;
 }
 </style>

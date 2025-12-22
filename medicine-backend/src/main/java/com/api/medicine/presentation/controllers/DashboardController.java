@@ -31,7 +31,9 @@ public class DashboardController {
     @GetMapping("/{doctorEmail}")
     public ResponseEntity<Map<String, Object>> getDoctorStats(@PathVariable String doctorEmail) {
 
-        List<Prescription> allPrescriptions = prescriptionRepository.getAll();
+        List<Prescription> allPrescriptions = prescriptionRepository.getAll().stream()
+                .filter(p -> p.getDoctor() != null && p.getDoctor().getEmail().equals(doctorEmail))
+                .collect(Collectors.toList());
 
         long todayCount = 0;
         long last7DaysCount = 0;
