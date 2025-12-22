@@ -290,7 +290,21 @@ const salesChartOptions = {
     maintainAspectRatio: false,
     cutout: '65%',
     plugins: {
-        legend: { display: false }
+        legend: { display: false },
+        tooltip: {
+            callbacks: {
+                label: function(context) {
+                    let label = context.label || '';
+                    if (label) {
+                        label += ': ';
+                    }
+                    if (context.parsed !== null) {
+                        label += context.parsed + '%';
+                    }
+                    return label;
+                }
+            }
+        }
     }
 };
 
