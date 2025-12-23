@@ -33,6 +33,19 @@
               ></v-text-field>
             </div>
 
+            <!-- Complete Button (Optional functionality to finish) -->
+            <div class="d-flex justify-end mt-6">
+              <v-btn
+                  v-if="selectedMedicines.length > 0"
+                  size="large"
+                  color="#A2D6B8"
+                  class="text-white font-weight-bold"
+                  @click="finishSelection"
+              >
+                Reçeteyi Tamamla
+              </v-btn>
+            </div>
+
             <!-- Recipe Count / Basket -->
             <v-card class="recipe-count-card px-6 py-2 d-flex align-center justify-space-between" rounded="lg" width="200" height="60" elevation="0">
               <span class="text-h5 font-weight-medium">Reçete</span>
@@ -88,19 +101,6 @@
               </v-card>
             </v-col>
           </v-row>
-
-          <!-- Complete Button (Optional functionality to finish) -->
-           <div class="d-flex justify-end mt-6">
-             <v-btn
-                v-if="selectedMedicines.length > 0"
-                size="large"
-                color="#A2D6B8"
-                class="text-white font-weight-bold"
-                @click="finishSelection"
-             >
-               Reçeteyi Tamamla
-             </v-btn>
-           </div>
         </div>
 
       </v-col>
