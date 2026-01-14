@@ -1,0 +1,6 @@
+torch
+pandas
+numpy
+psycopg2-binary
+scikit-learn
+schedule
