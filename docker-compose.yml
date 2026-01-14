@@ -57,7 +57,20 @@ services:
       # Backend ayağa kalktıktan sonra başla (zorunlu değil ama iyidir)
       - backend
 
-
+  # 4. Prediction Service (Python/PyTorch)
+  prediction-service:
+    build:
+      context: ./prediction-service
+      dockerfile: Dockerfile
+    container_name: prediction_service
+    environment:
+      DB_HOST: db
+      DB_NAME: medicine_db
+      DB_USER: postgres
+      DB_PASS: postgres
+    depends_on:
+      db:
+        condition: service_healthy
 
 volumes:
   postgres_data:

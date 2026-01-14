@@ -63,6 +63,85 @@
       </v-card>
     </div>
 
+    <!-- AI Predictions Section -->
+    <div class="predictions-grid">
+        <!-- Top 5 Predictions -->
+        <v-card class="prediction-card elevation-2">
+            <div class="card-header">
+                <h3>Gelecek Ay Tahminleri</h3>
+                <p>Yapay zeka modeline göre en çok satılması beklenen ilaçlar</p>
+            </div>
+            <v-list v-if="topPredictions.length > 0" lines="two">
+                <v-list-item v-for="(item, index) in topPredictions" :key="item.id" class="px-0">
+                    <template v-slot:prepend>
+                        <div class="rank-circle">{{ index + 1 }}</div>
+                    </template>
+                    <v-list-item-title class="font-weight-bold text-body-1">{{ item.medicine.name }}</v-list-item-title>
+                    <v-list-item-subtitle class="text-caption">Tahmin Edilen Satış Adedi</v-list-item-subtitle>
+                     <template v-slot:append>
+                        <div class="text-h6 font-weight-bold text-primary">{{ item.predictedSales }}</div>
+                    </template>
+                </v-list-item>
+            </v-list>
+            <div v-else class="text-center pa-4 text-grey">Yükleniyor veya veri yok...</div>
+        </v-card>
+
+        <!-- Search Prediction -->
+        <v-card class="prediction-card elevation-2">
+            <div class="card-header">
+                <h3>İlaç Tahmin Sorgulama</h3>
+                <p>Spesifik bir ilaç için gelecek ay satış tahminini öğrenin</p>
+            </div>
+            
+            <div class="search-box pa-2">
+                <v-text-field
+                    v-model="searchQuery"
+                    label="İlaç Adı Ara..."
+                    variant="solo-filled"
+                    density="comfortable"
+                    hide-details
+                    bg-color="grey-lighten-4"
+                    flat
+                    rounded="lg"
+                    prepend-inner-icon="mdi-magnify"
+                    @keyup.enter="handleSearch"
+                >
+                    <template v-slot:append-inner>
+                         <v-btn 
+                            color="#4CC9F0" 
+                            size="small" 
+                            variant="flat" 
+                            class="text-white text-capitalize"
+                            @click="handleSearch"
+                            :loading="searchLoading"
+                        >
+                            Sorgula
+                        </v-btn>
+                    </template>
+                </v-text-field>
+            </div>
+
+            <div v-if="searchResult && searchResult.length > 0" class="search-results mt-4">
+                <div v-for="res in searchResult" :key="res.id" class="result-card mb-3 pa-3 rounded-lg border">
+                    <div class="d-flex justify-space-between align-center">
+                        <div>
+                            <div class="text-subtitle-1 font-weight-bold">{{ res.medicine.name }}</div>
+                            <div class="text-caption text-grey">Tarih: {{ res.forecastDate }}</div>
+                        </div>
+                        <div class="text-center">
+                            <div class="text-caption text-grey">Tahmin</div>
+                            <div class="text-h5 font-weight-bold text-info">{{ res.predictedSales }}</div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <div v-else-if="searchResult && searchResult.length === 0" class="mt-6 text-center">
+                <v-icon icon="mdi-textBox-search-outline" size="large" color="grey-lighten-1"></v-icon>
+                <div class="text-grey mt-2">Aranan kriterlere uygun tahmin bulunamadı.</div>
+            </div>
+        </v-card>
+    </div>
+
     <!-- Low Stock Alerts Table (Full width now) -->
     <div class="bottom-grid">
         <v-card class="table-card elevation-2" style="grid-column: 1 / -1;">
@@ -132,6 +211,12 @@ const totalSalesCount = ref(0); // For center text of Best Sellers
 // Charts State
 const stockChartData = ref({});
 const salesChartData = ref({});
+
+// Predictions State
+const topPredictions = ref([]);
+const searchQuery = ref('');
+const searchResult = ref(null);
+const searchLoading = ref(false);
 
 // Data Fetching
 const fetchATMData = async () => {
@@ -308,6 +393,32 @@ const salesChartOptions = {
     }
 };
 
+const fetchTopPredictions = async () => {
+    try {
+        const response = await axios.get(`${API_BASE_URL}/api/analysis/predictions/top-5`);
+        topPredictions.value = response.data;
+    } catch (error) {
+        console.error("Tahmin verisi hatası:", error);
+    }
+};
+
+const handleSearch = async () => {
+    if (!searchQuery.value) return;
+    searchLoading.value = true;
+    // searchResult.value = null; // Optional: clear previous results immediately
+    try {
+        const response = await axios.get(`${API_BASE_URL}/api/analysis/predictions/search`, {
+            params: { name: searchQuery.value }
+        });
+        searchResult.value = response.data;
+    } catch (error) {
+        console.error("Arama hatası:", error);
+        searchResult.value = [];
+    } finally {
+        searchLoading.value = false;
+    }
+};
+
 const formattedTotalSales = computed(() => {
     const total = totalSalesCount.value;
     return total >= 1000 ? (total / 1000).toFixed(1) + 'k' : total;
@@ -316,6 +427,7 @@ const formattedTotalSales = computed(() => {
 onMounted(() => {
     fetchATMData();
     fetchSalesData();
+    fetchTopPredictions();
 });
 </script>
 
@@ -574,5 +686,56 @@ onMounted(() => {
     color: #FF5252;
     padding: 20px;
     text-align: center;
+}
+
+/* Predictions Grid */
+.predictions-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 20px;
+    margin-bottom: 30px;
+}
+
+@media(max-width: 900px) {
+    .charts-grid { grid-template-columns: 1fr; }
+    .predictions-grid { grid-template-columns: 1fr; }
+}
+
+.prediction-card {
+    padding: 24px;
+    border-radius: 16px;
+    background-color: #fff;
+    min-height: 350px; /* Ensure consistent height */
+    display: flex;
+    flex-direction: column;
+}
+
+.rank-circle {
+    width: 32px;
+    height: 32px;
+    background-color: #e3f2fd;
+    color: #4CC9F0;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-weight: 700;
+    margin-right: 15px;
+}
+
+.search-results {
+    max-height: 300px;
+    overflow-y: auto;
+}
+
+.result-card {
+    border: 1px solid #eee;
+    background-color: #fafafa;
+    transition: all 0.2s;
+}
+.result-card:hover {
+    background-color: #fff;
+    box-shadow: 0 2px 8px rgba(0,0,0,0.05);
+    border-color: #4CC9F0;
 }
 </style>
