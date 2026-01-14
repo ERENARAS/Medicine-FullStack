@@ -1,6 +1,7 @@
 <template>
   <div class="atm-locations-container">
     <!-- Header with Back Button -->
+     
     <div class="header-section">
       <div class="header-left">
         <v-btn class="back-btn" @click="$emit('back')" variant="text" size="small">
