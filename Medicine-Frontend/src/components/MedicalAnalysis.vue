@@ -183,9 +183,9 @@ const proceedToMedicineSelection = () => {
 .main-content-area {
   position: relative;
   width: 100%;
-  max-width: 80%;
+  max-width: 95%;
   margin: 0 auto;
-  left: 10%;
+  left: 0;
 }
 
 .info-header-card {
