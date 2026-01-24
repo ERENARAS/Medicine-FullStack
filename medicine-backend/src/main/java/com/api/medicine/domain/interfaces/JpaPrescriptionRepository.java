@@ -15,6 +15,6 @@ public interface JpaPrescriptionRepository extends JpaRepository<Prescription, U
     // Spring Data JPA metod isimlerinden sorguyu otomatik türetir
     Optional<List<Prescription>> findByPatient(Patient patient);
 
-    @Query("SELECT p FROM Prescription p JOIN p.medicines m ORDER BY p.createdAt ASC")
+    @Query("SELECT p FROM Prescription p JOIN p.medicines m ORDER BY p.date ASC")
     List<Prescription> findAllPrescriptionsOrderedByDate();
 }

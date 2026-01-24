@@ -17,6 +17,13 @@
                        @switch-mode="switchMode"
                        @continue-prescription="handleContinuePrescription" />
 
+    <MedicalAnalysis v-else-if="currentMode === 'medical-analysis' && currentUser.role === 'doctor'"
+                     :user="currentUser"
+                     :patient="selectedPatientForPrescription"
+                     @logout="handleLogout"
+                     @switch-mode="switchMode"
+                     @analysis-complete="handleAnalysisComplete" />
+
     <MedicineSelection v-else-if="currentMode === 'medicine-selection' && currentUser.role === 'doctor'"
                        :user="currentUser"
                        :patient="selectedPatientForPrescription"
@@ -60,6 +67,7 @@ import PharmacyDashboard from './components/PharmacyDashboard.vue';
 import WritePrescription from './components/WritePrescription.vue';
 import MedicineSelection from './components/MedicineSelection.vue';
 import PrescriptionConfirmation from './components/PrescriptionConfirmation.vue';
+import MedicalAnalysis from './components/MedicalAnalysis.vue';
 
 // currentMode: 'login', 'signup', 'dashboard', 'write-prescription', 'medicine-selection', 'prescription-confirmation'
 const currentMode = ref('login');
@@ -129,9 +137,16 @@ const handleLogout = () => {
   console.log('Çıkış yapıldı.');
 };
 
-// Reçete Yaz -> İlaç Seçimi geçişi
+// Reçete Yaz -> Semptom Analizi geçişi
 const handleContinuePrescription = (patientData) => {
   selectedPatientForPrescription.value = patientData;
+  switchMode('medical-analysis');
+};
+
+// Semptom Analizi -> İlaç Seçimi geçişi
+const handleAnalysisComplete = (patientData) => {
+  // patientData opsiyonel, zaten selectedPatientForPrescription'da var ama güncelleyebiliriz
+  if(patientData) selectedPatientForPrescription.value = patientData;
   switchMode('medicine-selection');
 };
 
