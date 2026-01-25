@@ -44,13 +44,27 @@
                     color="#252B61"
                     block
                     size="large"
-                    class="text-white"
+                    :class="['text-white', {'mb-3': analysisResult}]"
                     @click="analyzeComplaint"
                     :loading="loading"
                     :disabled="!complaint"
                 >
                   <v-icon start>mdi-brain</v-icon>
                   Analiz Et
+                </v-btn>
+
+                <v-btn
+                    v-if="analysisResult"
+                    color="teal-darken-1"
+                    block
+                    size="large"
+                    class="text-white fade-in"
+                    @click="diagnoseComplaint"
+                    :loading="loading"
+                    :disabled="!complaint"
+                >
+                  <v-icon start>mdi-medical-bag</v-icon>
+                  Hastalık Tahmini (Beta)
                 </v-btn>
               </v-card>
             </v-col>
@@ -62,8 +76,21 @@
 
                 <v-skeleton-loader v-if="loading" type="article, paragraph"></v-skeleton-loader>
 
-                <div v-else-if="analysisResult" class="analysis-result fade-in">
-                  <v-sheet border rounded="lg" class="pa-4 bg-grey-lighten-4 mb-4">
+                <div v-else-if="analysisResult || predictionResult" class="analysis-result fade-in">
+                  
+                  <!-- Prediction Result Section -->
+                  <v-alert v-if="predictionResult" color="teal-lighten-5" border="start" border-color="teal" class="mb-4">
+                    <div class="text-h6 text-teal-darken-3 mb-1">Tahmin Edilen Durum</div>
+                    <div class="text-body-1">
+                      {{ predictionResult.disease || predictionResult.prediction || 'Sonuç Bulunamadı' }}
+                    </div>
+                    <div v-if="predictionResult.confidence" class="text-caption text-medium-emphasis mt-1">
+                      Güven Skoru: %{{ (predictionResult.confidence * 100).toFixed(1) }}
+                    </div>
+                  </v-alert>
+
+                  <!-- Text Analysis Section -->
+                  <v-sheet v-if="analysisResult" border rounded="lg" class="pa-4 bg-grey-lighten-4 mb-4">
                     <pre class="result-text">{{ analysisResult }}</pre>
                   </v-sheet>
                   
@@ -105,6 +132,7 @@ const emit = defineEmits(['switch-mode', 'logout', 'analysis-complete']);
 
 const complaint = ref('');
 const analysisResult = ref('');
+const predictionResult = ref(null);
 const loading = ref(false);
 const API_BASE_URL = import.meta.env.VITE_API_URL || 'http://localhost:8080';
 
@@ -113,6 +141,7 @@ const analyzeComplaint = async () => {
   
   loading.value = true;
   analysisResult.value = '';
+  predictionResult.value = null;
 
   try {
     const response = await axios.post(`${API_BASE_URL}/api/medical-analysis`, complaint.value, {
@@ -124,6 +153,32 @@ const analyzeComplaint = async () => {
   } catch (error) {
     console.error("Analiz hatası:", error);
     analysisResult.value = "Analiz sırasında bir hata oluştu: " + (error.response?.data || error.message);
+  } finally {
+    loading.value = false;
+  }
+};
+
+const diagnoseComplaint = async () => {
+  if (!complaint.value) return;
+  
+  loading.value = true;
+  analysisResult.value = '';
+  predictionResult.value = null;
+
+  try {
+    const response = await axios.post(`${API_BASE_URL}/api/medical-analysis/diagnose`, complaint.value, {
+      headers: {
+        'Content-Type': 'text/plain'
+      }
+    });
+    // Response is a Map: { detailed_analysis: "...", disease: "...", ... }
+    predictionResult.value = response.data;
+    if (response.data.detailed_analysis) {
+        analysisResult.value = response.data.detailed_analysis;
+    }
+  } catch (error) {
+    console.error("Tahmin hatası:", error);
+    analysisResult.value = "Tahmin servisinde hata oluştu: " + (error.response?.data?.error || error.message);
   } finally {
     loading.value = false;
   }

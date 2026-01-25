@@ -13,10 +13,19 @@ public class MedicalAnalysisController {
     @Autowired
     private SymptomAnalysisService symptomAnalysisService;
 
+    @Autowired
+    private com.api.medicine.application.services.DiagnosisOrchestratorService diagnosisOrchestratorService;
+
     @PostMapping
     public ResponseEntity<String> analyze(@RequestBody String complaint) {
         // Simple string body handling
         String result = symptomAnalysisService.analyzeComplaint(complaint);
+        return ResponseEntity.ok(result);
+    }
+
+    @PostMapping("/diagnose")
+    public ResponseEntity<java.util.Map<String, Object>> diagnose(@RequestBody String complaint) {
+        java.util.Map<String, Object> result = diagnosisOrchestratorService.diagnosePatient(complaint);
         return ResponseEntity.ok(result);
     }
 }

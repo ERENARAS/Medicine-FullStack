@@ -15,29 +15,52 @@ public class SymptomAnalysisService {
     public String analyzeComplaint(String userComplaint) {
         RestTemplate restTemplate = new RestTemplate();
 
-        // Model eğitim formatımıza uygun prompt hazırlıyoruz
-        String prompt = "### Instruction:\n" +
-                "Şikayeti analiz et ve önemli tıbbi bulguları maddeleyerek özetle.\n\n" +
-                "### Input:\n" +
-                userComplaint + "\n\n" +
-                "### Response:\n";
+        // Simple symptom extraction prompt - Turkish output
+        String systemMessage = "Sen bir tıbbi asistan botsun. Hastanın şikayetlerinden semptomları çıkar.";
 
-        // JSON Request Body hazırlığı
+        String finalPrompt = """
+                GÖREV: Aşağıdaki hasta şikayetinden semptomları çıkar ve Türkçe listele.
+
+                KURALLAR:
+                - Semptomları madde madde listele
+                - Her semptom için süre ve şiddet bilgisi varsa ekle
+                - Sadece semptomları yaz, ek yorum yapma
+
+                ÖRNEK:
+                Metin: "Başım 2 gündür ağrıyor ve karnımda şişlik var"
+                Çıktı:
+                Semptom: Baş ağrısı
+                Süre: 2 gün
+                Şiddet/Detay: Belirtilmemiş
+
+                Semptom: Karın şişliği
+                Süre: Belirtilmemiş
+                Şiddet/Detay: Belirtilmemiş
+                ---
+
+                GERÇEK VERİ:
+                Metin: "%s"
+                Çıktı:
+                """.formatted(userComplaint);
+
         Map<String, Object> requestBody = new HashMap<>();
-        requestBody.put("model", "medicine-ai"); // User's custom model name
-        requestBody.put("prompt", prompt);
+        requestBody.put("model", "medicine-ai");
+        requestBody.put("system", systemMessage);
+        requestBody.put("prompt", finalPrompt);
         requestBody.put("stream", false);
+
+        Map<String, Object> options = new HashMap<>();
+        options.put("temperature", 0.1);
+        options.put("num_predict", 300);
+        requestBody.put("options", options);
 
         HttpHeaders headers = new HttpHeaders();
         headers.setContentType(MediaType.APPLICATION_JSON);
-
         HttpEntity<Map<String, Object>> entity = new HttpEntity<>(requestBody, headers);
 
         try {
-            // Ollama'ya POST isteği atıyoruz
             ResponseEntity<Map> response = restTemplate.postForEntity(OLLAMA_API_URL, entity, Map.class);
 
-            // Cevabı alıyoruz
             if (response.getBody() != null && response.getBody().containsKey("response")) {
                 return response.getBody().get("response").toString();
             }
@@ -46,5 +69,31 @@ public class SymptomAnalysisService {
             return "AI Servisine ulaşılamadı. Lütfen Ollama'nın çalıştığından emin olun. Hata: " + e.getMessage();
         }
         return "Analiz yapılamadı.";
+    }
+
+    public String askLlamaSpecificPrompt(String customPrompt) {
+        RestTemplate restTemplate = new RestTemplate();
+        Map<String, Object> requestBody = new HashMap<>();
+        requestBody.put("model", "medicine-ai");
+        requestBody.put("prompt", customPrompt);
+        requestBody.put("stream", false);
+
+        Map<String, Object> options = new HashMap<>();
+        options.put("temperature", 0.0);
+        requestBody.put("options", options);
+
+        HttpHeaders headers = new HttpHeaders();
+        headers.setContentType(MediaType.APPLICATION_JSON);
+        HttpEntity<Map<String, Object>> entity = new HttpEntity<>(requestBody, headers);
+
+        try {
+            ResponseEntity<Map> response = restTemplate.postForEntity(OLLAMA_API_URL, entity, Map.class);
+            if (response.getBody() != null && response.getBody().containsKey("response")) {
+                return response.getBody().get("response").toString();
+            }
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
+        return "[]";
     }
 }

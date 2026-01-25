@@ -7,16 +7,24 @@ import numpy as np
 import torch
 import torch.nn as nn
 import schedule
+import threading
 from sklearn.preprocessing import MinMaxScaler
 from datetime import datetime, timedelta
+from fastapi import FastAPI, HTTPException
+from pydantic import BaseModel
+from typing import List
 
+# FastAPI App
+app = FastAPI()
+
+# --- EXISTING SALES PREDICTION LOGIC (Condensed for brevity, kept functional) ---
 # Configuration
 DB_HOST = os.getenv("DB_HOST", "postgres_db")
 DB_NAME = os.getenv("DB_NAME", "medicine_db")
 DB_USER = os.getenv("DB_USER", "postgres")
 DB_PASS = os.getenv("DB_PASS", "postgres")
 EPOCHS = 100
-LOOKBACK = 12 # Number of past months to use for prediction
+LOOKBACK = 12
 
 class LSTMModel(nn.Module):
     def __init__(self, input_size=1, hidden_size=50, output_size=1):
@@ -34,156 +42,135 @@ class LSTMModel(nn.Module):
 
 def get_db_connection():
     try:
-        conn = psycopg2.connect(
-            host=DB_HOST,
-            database=DB_NAME,
-            user=DB_USER,
-            password=DB_PASS
-        )
+        conn = psycopg2.connect(host=DB_HOST, database=DB_NAME, user=DB_USER, password=DB_PASS)
         return conn
     except Exception as e:
         print(f"Error connecting to DB: {e}")
         return None
 
 def fetch_data(conn):
-    query = """
-        SELECT m.id, m.name, p.date
-        FROM medicine m
-        JOIN prescription_medicine pm ON m.id = pm.medicine_id
-        JOIN prescription p ON pm.prescription_id = p.id
-        WHERE p.dispensed = true
-    """
-    df = pd.read_sql_query(query, conn)
-    return df
+    try:
+        query = """
+            SELECT m.id, m.name, p.date
+            FROM medicine m
+            JOIN prescription_medicine pm ON m.id = pm.medicine_id
+            JOIN prescription p ON pm.prescription_id = p.id
+            WHERE p.dispensed = true
+        """
+        return pd.read_sql_query(query, conn)
+    except Exception as e:
+        print(f"Error fetching data: {e}")
+        return pd.DataFrame()
+
+def save_predictions(conn, predictions):
+    cursor = conn.cursor()
+    try:
+        cursor.execute("TRUNCATE TABLE medicine_forecast")
+        insert_query = "INSERT INTO medicine_forecast (medicine_id, predicted_sales, forecast_date) VALUES (%s, %s, %s)"
+        for pred in predictions:
+            cursor.execute(insert_query, (pred['medicine_id'], pred['predicted_sales'], pred['forecast_date']))
+        conn.commit()
+    except Exception as e:
+        print(f"Error saving: {e}")
+        conn.rollback()
+    finally:
+        cursor.close()
 
 def train_and_predict():
-    print("Starting prediction task...")
+    print("Starting SALES prediction task...")
     conn = get_db_connection()
-    if not conn:
-        print("Database connection failed. Retrying in 1 minute.")
-        return
-
+    if not conn: return
     try:
         df = fetch_data(conn)
-        if df.empty:
-            print("No data found for training.")
-            return
-
+        if df.empty: return
         df['date'] = pd.to_datetime(df['date'])
         df['month_year'] = df['date'].dt.to_period('M')
-
-        # Group by medicine and month to get sales count
         monthly_sales = df.groupby(['id', 'month_year']).size().reset_index(name='count')
-        
-        # Get unique medicines
         medicine_ids = monthly_sales['id'].unique()
-        
         predictions = []
-        today = datetime.now()
-        next_month = today.replace(day=1) + timedelta(days=32)
-        next_month = next_month.replace(day=1) # First day of next month
-        
+        next_month = (datetime.now().replace(day=1) + timedelta(days=32)).replace(day=1)
         device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
 
         for med_id in medicine_ids:
             med_data = monthly_sales[monthly_sales['id'] == med_id].sort_values('month_year')
             counts = med_data['count'].values.astype(float)
-            
-            # We need at least LOOKBACK + 1 data points to train meaningfully (or just LOOKBACK to predict next)
-            # If simplistic, just ensure we have enough points, otherwise assume average or 0
-            if len(counts) < LOOKBACK:
-                # Not enough data, use average as fallback
-                pred_val = np.mean(counts) if len(counts) > 0 else 0
-            else:
-                # Preprocessing
+            pred_val = 0
+            if len(counts) >= LOOKBACK:
                 scaler = MinMaxScaler(feature_range=(0, 1))
                 counts_normalized = scaler.fit_transform(counts.reshape(-1, 1))
-
-                # Prepare sequences
                 X, y = [], []
                 for i in range(len(counts_normalized) - LOOKBACK):
                     X.append(counts_normalized[i:(i + LOOKBACK), 0])
                     y.append(counts_normalized[i + LOOKBACK, 0])
-                
                 if len(X) > 0:
-                    X_train = torch.tensor(np.array(X), dtype=torch.float32).unsqueeze(2).to(device)
-                    y_train = torch.tensor(np.array(y), dtype=torch.float32).unsqueeze(1).to(device)
-                    
-                    # Train Model
                     model = LSTMModel().to(device)
                     criterion = nn.MSELoss()
                     optimizer = torch.optim.Adam(model.parameters(), lr=0.01)
-                    
-                    for epoch in range(EPOCHS):
+                    X_train = torch.tensor(np.array(X), dtype=torch.float32).unsqueeze(2).to(device)
+                    y_train = torch.tensor(np.array(y), dtype=torch.float32).unsqueeze(1).to(device)
+                    for _ in range(EPOCHS):
                         model.train()
-                        outputs = model(X_train)
-                        loss = criterion(outputs, y_train)
+                        loss = criterion(model(X_train), y_train)
                         optimizer.zero_grad()
                         loss.backward()
                         optimizer.step()
-                    
-                    # Predict next value
                     model.eval()
-                    last_sequence = counts_normalized[-LOOKBACK:].reshape(1, LOOKBACK, 1)
-                    last_sequence_tensor = torch.tensor(last_sequence, dtype=torch.float32).to(device)
-                    
+                    last_seq = torch.tensor(counts_normalized[-LOOKBACK:].reshape(1, LOOKBACK, 1), dtype=torch.float32).to(device)
                     with torch.no_grad():
-                        prediction_normalized = model(last_sequence_tensor).cpu().numpy()
-                        prediction = scaler.inverse_transform(prediction_normalized)
-                        pred_val = prediction[0][0]
-                else:
-                    # If we have exactly LOOKBACK items, we can't train "past" vs "next" traditionally without splitting, 
-                    # but we can try to overfit or just use last mean. 
-                    # For simplicity, if we have enough for one sequence, we predict.
-                    # If not, use mean.
-                     pred_val = np.mean(counts)
-
-            predictions.append({
-                'medicine_id': med_id,
-                'predicted_sales': int(round(max(0, pred_val))),
-                'forecast_date': next_month.date()
-            })
-
-        # Save to DB
+                        pred_val = scaler.inverse_transform(model(last_seq).cpu().numpy())[0][0]
+                else: pred_val = np.mean(counts)
+            else: pred_val = np.mean(counts) if len(counts) > 0 else 0
+            
+            predictions.append({'medicine_id': med_id, 'predicted_sales': int(round(max(0, pred_val))), 'forecast_date': next_month.date()})
         save_predictions(conn, predictions)
-        print("Predictions saved successfully.")
-
+        print("Sales predictions saved.")
     except Exception as e:
-        print(f"Error during training/prediction: {e}")
+        print(f"Error in training: {e}")
     finally:
         conn.close()
 
-def save_predictions(conn, predictions):
-    cursor = conn.cursor()
-    try:
-        # Clear old forecasts for simplicity or we could Update.
-        # User wants "next month" forecast.
-        cursor.execute("TRUNCATE TABLE medicine_forecast")
-        
-        insert_query = """
-            INSERT INTO medicine_forecast (medicine_id, predicted_sales, forecast_date)
-            VALUES (%s, %s, %s)
-        """
-        for pred in predictions:
-            cursor.execute(insert_query, (pred['medicine_id'], pred['predicted_sales'], pred['forecast_date']))
-        
-        conn.commit()
-    except Exception as e:
-        print(f"Error saving predictions: {e}")
-        conn.rollback()
-    finally:
-        cursor.close()
+# --- DISEASE PREDICTION API ---
 
-if __name__ == "__main__":
-    # Delay to ensure DB is up when container starts
-    time.sleep(10) 
+class SymptomRequest(BaseModel):
+    symptoms: List[str]
+
+# Simple rule-based mock for demonstration until a trained model is provided.
+# You can load a PyTorch model here if you have one (e.g. disease_model.pth).
+def predict_disease_rule_based(symptoms: List[str]):
+    symptoms_set = set(s.lower().replace("_", " ") for s in symptoms)
     
-    # Run once immediately
-    train_and_predict()
+    if "vomiting" in symptoms_set or "nausea" in symptoms_set:
+        if "fever" in symptoms_set:
+            return {"disease": "Gastroenteritis", "confidence": 0.85}
+        return {"disease": "Gastritis", "confidence": 0.75}
+    if "headache" in symptoms_set:
+        if "sensitivity to light" in symptoms_set or "nausea" in symptoms_set:
+            return {"disease": "Migraine", "confidence": 0.90}
+        return {"disease": "Tension Headache", "confidence": 0.80}
+    if "fever" in symptoms_set and "cough" in symptoms_set:
+        return {"disease": "Flu (Influenza)", "confidence": 0.88}
     
-    # Schedule to run daily (or as needed)
+    return {"disease": "General Viral Infection", "confidence": 0.60}
+
+@app.post("/predict")
+def predict_disease(request: SymptomRequest):
+    print(f"Received symptoms: {request.symptoms}")
+    result = predict_disease_rule_based(request.symptoms)
+    return result
+
+@app.get("/health")
+def health_check():
+    return {"status": "ok"}
+
+# Background Scheduler
+def run_scheduler():
+    time.sleep(10) # Initial delay
+    train_and_predict() # Run once on startup
     schedule.every().day.at("00:00").do(train_and_predict)
-    
     while True:
         schedule.run_pending()
         time.sleep(60)
+
+# Start scheduler in background
+threading.Thread(target=run_scheduler, daemon=True).start()
+

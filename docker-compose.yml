@@ -55,7 +55,7 @@ services:
       # Backend ayağa kalktıktan sonra başla (zorunlu değil ama iyidir)
       - backend
 
-  # 4. Prediction Service (Python/PyTorch)
+  # 4. Prediction Service (Python/PyTorch) - SALES PREDICTION
   prediction-service:
     build:
       context: ./prediction-service
@@ -69,6 +69,18 @@ services:
     depends_on:
       db:
         condition: service_healthy
+
+  # 5. Disease Service (Python/FastAPI) - DISEASE PREDICTION
+  disease-service:
+    build:
+      context: ./disease-service
+      dockerfile: Dockerfile
+    container_name: disease_service
+    ports:
+      - "8001:8000" # Expose on 8001 to avoid conflict if needed, or internal only
+    environment:
+      # Add env vars if needed
+      PYTHONUNBUFFERED: 1
 
 volumes:
   postgres_data:
