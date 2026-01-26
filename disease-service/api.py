@@ -14,6 +14,7 @@ try:
     # Eğitilmiş Modeli Yükle
     model = joblib.load('medicine_model.pkl')
     symptom_list = joblib.load('symptom_list.pkl')
+    label_encoder = joblib.load('label_encoder.pkl')  # XGBoost için label encoder
 
     # Ekstra Bilgi CSV'lerini Yükle (Dosya adlarının birebir aynı olduğundan emin ol!)
     # Kaggle'dan indirdiğin dosya adlarına göre burayı düzenle:
@@ -26,6 +27,7 @@ except Exception as e:
     print(f"❌ Kritik Hata: Dosyalar yüklenemedi. {e}")
     # Hata olsa bile API çalışsın ama hata versin
     model = None
+    label_encoder = None
 
 
 # --- 2. İSTEK FORMATI (JSON) ---
@@ -71,8 +73,25 @@ def predict_disease(request: SymptomRequest):
             "received_symptoms": request.symptoms
         }
 
-    # B. Tahmin Yap
-    prediction = model.predict([input_vector])[0]  # Örn: "Fungal infection"
+    # B. Tahmin Yap (XGBoost with confidence)
+    prediction_raw = model.predict([input_vector])[0]
+    prediction_proba = model.predict_proba([input_vector])[0]  # Olasılık dağılımı
+    
+    # Modelin doğrudan string mi yoksa encoded value mu döndürdüğünü kontrol et
+    if isinstance(prediction_raw, (int, np.integer)):
+        # Sayısal tahmin - Label encoder ile hastalık ismine çevir
+        prediction = label_encoder.inverse_transform([prediction_raw])[0]
+        confidence = float(prediction_proba[prediction_raw])
+    else:
+        # Doğrudan string döndürüyor
+        prediction = str(prediction_raw)
+        # Hastalığın index'ini bul
+        try:
+            disease_index = list(label_encoder.classes_).index(prediction)
+            confidence = float(prediction_proba[disease_index])
+        except (ValueError, IndexError):
+            # En yüksek olasılığı al
+            confidence = float(np.max(prediction_proba))
 
     # C. Ek Bilgileri Getir (Açıklama ve Doktor)
     description = "Açıklama bulunamadı."
@@ -92,7 +111,7 @@ def predict_disease(request: SymptomRequest):
     # D. Sonucu Döndür
     return {
         "diagnosis": prediction,
-        "confidence_score": "High (Rule Based)",  # Random Forest genelde kesindir
+        "confidence_score": round(confidence, 4),  # Gerçek güven skoru (0-1 arası)
         "description": description,
         "recommended_specialist": specialist,
         "matched_symptoms": matched_symptoms
