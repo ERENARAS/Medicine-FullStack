@@ -87,3 +87,7 @@ Docker Cache ve Build dosyalar?
 
 # Pickle model dosyaları (büyük boyutlu)
 *.pkl
+
+# Büyük boyutlu dataset dosyaları
+*Augmented*.csv
+Final_*.csv
