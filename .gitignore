@@ -78,3 +78,12 @@ Maven Wrapper
 Docker Cache ve Build dosyalar?
 
 .dockerignore
+
+--------------------------------------------------
+
+5. Python / ML Model Dosyaları Için Yoksayılacaklar
+
+--------------------------------------------------
+
+# Pickle model dosyaları (büyük boyutlu)
+*.pkl
