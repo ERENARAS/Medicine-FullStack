@@ -7,7 +7,7 @@
       <div class="nav-links">
         <a href="#" @click="currentView = 'home'">Ana Sayfa</a>
         <a href="#" @click="currentView = 'nearby'">ATM Konumları</a>
-        <v-btn @click="$emit('logout')" class="logout-btn" variant="outlined" size="small">Çıkış Yap</v-btn>
+        <v-btn @click="handleLogout" class="logout-btn" variant="outlined" size="small">Çıkış Yap</v-btn>
       </div>
     </v-sheet>
 
@@ -257,15 +257,19 @@
 <script setup>
 import { ref, onMounted, computed } from 'vue';
 import axios from 'axios';
+import { useRouter } from 'vue-router';
+import { useAuthStore } from '../stores/auth';
 
-const props = defineProps({
-  user: Object,
-});
+const router = useRouter();
+const authStore = useAuthStore();
 
-const emit = defineEmits(['logout']);
+const patientName = computed(() => authStore.currentUser?.name || 'Hasta');
+const patientEmail = computed(() => authStore.currentUser?.email || '');
 
-const patientName = computed(() => props.user?.name || 'Kullanıcı');
-const patientEmail = computed(() => props.user?.email || '');
+const handleLogout = () => {
+  authStore.logout();
+  router.push('/login');
+};
 
 const currentView = ref('home'); // 'home', 'atm-id', 'dispense', 'nearby'
 const patientInfo = ref(null);

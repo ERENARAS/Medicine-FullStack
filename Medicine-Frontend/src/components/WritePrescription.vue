@@ -3,10 +3,10 @@
     <v-sheet class="navbar-area d-flex justify-space-between align-center px-6">
       <h1 class="logo">Medicine</h1>
       <div class="nav-links">
-        <a href="#" @click.prevent="$emit('switch-mode', 'dashboard')">Ana Sayfa</a>
+        <a href="#" @click.prevent="router.push('/doctor/dashboard')">Ana Sayfa</a>
         <a href="#" class="ml-4">ATM Konumları</a>
         <a href="#" class="ml-4">Hakkında</a>
-        <v-btn variant="outlined" size="small" class="logout-btn ml-6" @click="$emit('logout')">Çıkış Yap</v-btn>
+        <v-btn variant="outlined" size="small" class="logout-btn ml-6" @click="handleLogout">Çıkış Yap</v-btn>
       </div>
     </v-sheet>
 
@@ -163,12 +163,13 @@
 <script setup>
 import { ref, onMounted, computed } from 'vue';
 import axios from 'axios';
+import { useRouter } from 'vue-router';
+import { useAuthStore } from '../stores/auth';
+import { usePrescriptionStore } from '../stores/prescription';
 
-const emit = defineEmits(['switch-mode', 'logout', 'continue-prescription']);
-
-const props = defineProps({
-  user: Object,
-});
+const router = useRouter();
+const authStore = useAuthStore();
+const prescriptionStore = usePrescriptionStore();
 
 const patients = ref([]);
 const isLoading = ref(false);
@@ -274,12 +275,23 @@ const handleContinue = async () => {
   const { valid } = await prescriptionForm.value.validate();
 
   if (valid) {
-    emit('continue-prescription', {
+    const patientData = {
       name: form.value.name,
       surname: form.value.surname,
       email: form.value.email
-    });
+    };
+    
+    // Store'a hasta bilgilerini kaydet
+    prescriptionStore.setSelectedPatient(patientData);
+    
+    // Medical analysis sayfasına yönlendir
+    router.push('/doctor/medical-analysis');
   }
+};
+
+const handleLogout = () => {
+  authStore.logout();
+  router.push('/login');
 };
 
 onMounted(() => {

@@ -21,7 +21,7 @@
       </form>
 
       <p class="signup-link">
-        Hesabın yok mu? <a href="#" @click.prevent="$emit('switch-mode', 'signup')" class="link-style">Kayıt Ol</a>
+        Hesabın yok mu? <a href="#" @click.prevent="router.push('/signup')" class="link-style">Kayıt Ol</a>
       </p>
 
       <p v-if="successMessage" class="message success">{{ successMessage }}</p>
@@ -37,8 +37,11 @@
 <script setup>
 import { ref } from 'vue';
 import axios from 'axios';
+import { useRouter } from 'vue-router';
+import { useAuthStore } from '../stores/auth';
 
-const emit = defineEmits(['switch-mode', 'login-success']);
+const router = useRouter();
+const authStore = useAuthStore();
 
 const form = ref({
   email: '',
@@ -78,7 +81,22 @@ const loginUser = async () => {
     successMessage.value = `Giriş başarılı! Hoş geldiniz: ${response.data.name}`;
     errorMessage.value = '';
 
-    emit('login-success', response.data);
+    // Store'a kullanıcı bilgilerini kaydet
+    authStore.login(response.data);
+
+    // Rol'e göre yönlendirme yap
+    const userRole = authStore.currentUser.role;
+    if (userRole === 'doctor') {
+      router.push('/doctor/dashboard');
+    } else if (userRole === 'patient') {
+      router.push('/patient/dashboard');
+    } else if (userRole === 'pharmacy') {
+      router.push('/pharmacy/dashboard');
+    } else {
+      errorMessage.value = 'Geçersiz kullanıcı rolü.';
+      authStore.logout();
+      return;
+    }
 
     form.value.email = '';
     form.value.password = '';

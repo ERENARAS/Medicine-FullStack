@@ -24,7 +24,7 @@
       </form>
 
       <p class="login-link">
-        Daha önce hesabın var mı? <a href="#" @click.prevent="$emit('switch-mode', 'login')">Giriş Yap</a>
+        Daha önce hesabın var mı? <a href="#" @click.prevent="router.push('/login')">Giriş Yap</a>
       </p>
 
       <p v-if="successMessage" class="message success">{{ successMessage }}</p>
@@ -40,9 +40,9 @@
 <script setup>
 import { ref } from 'vue';
 import axios from 'axios';
+import { useRouter } from 'vue-router';
 
-
-const emit = defineEmits(['switch-mode']);
+const router = useRouter();
 
 // Form verileri
 const form = ref({

@@ -3,10 +3,10 @@
     <v-sheet class="navbar-area d-flex justify-space-between align-center px-6">
       <h1 class="logo">Medicine</h1>
       <div class="nav-links">
-        <a href="#" @click.prevent="$emit('switch-mode', 'dashboard')">Ana Sayfa</a>
+        <a href="#" @click.prevent="router.push('/doctor/dashboard')">Ana Sayfa</a>
         <a href="#" class="ml-4">ATM Konumları</a>
         <a href="#" class="ml-4">Hakkında</a>
-        <v-btn variant="outlined" size="small" class="logout-btn ml-6" @click="$emit('logout')">Çıkış Yap</v-btn>
+        <v-btn variant="outlined" size="small" class="logout-btn ml-6" @click="handleLogout">Çıkış Yap</v-btn>
       </div>
     </v-sheet>
 
@@ -25,9 +25,8 @@
             <v-col cols="12" md="6" class="pa-6">
               <v-card class="input-card elevation-0" rounded="lg">
                 <v-card-title class="sub-headline mb-4">Hasta Şikayeti</v-card-title>
-                
-                <v-alert v-if="patient" color="info" variant="tonal" class="mb-4" density="compact">
-                  <strong>Hasta:</strong> {{ patient.name }} {{ patient.surname }}
+                                <v-alert v-if="prescriptionStore.selectedPatient" color="info" variant="tonal" class="mb-4" density="compact">
+                   <strong>Hasta:</strong> {{ prescriptionStore.selectedPatient.name }} {{ prescriptionStore.selectedPatient.surname }}
                 </v-alert>
 
                 <v-textarea
@@ -122,13 +121,13 @@
 <script setup>
 import { ref } from 'vue';
 import axios from 'axios';
+import { useRouter } from 'vue-router';
+import { useAuthStore } from '../stores/auth';
+import { usePrescriptionStore } from '../stores/prescription';
 
-const props = defineProps({
-  user: Object,
-  patient: Object
-});
-
-const emit = defineEmits(['switch-mode', 'logout', 'analysis-complete']);
+const router = useRouter();
+const authStore = useAuthStore();
+const prescriptionStore = usePrescriptionStore();
 
 const complaint = ref('');
 const analysisResult = ref('');
@@ -185,7 +184,20 @@ const diagnoseComplaint = async () => {
 };
 
 const proceedToMedicineSelection = () => {
-  emit('analysis-complete', props.patient);
+  // Save analysis data to store if needed
+  if (analysisResult.value || predictionResult.value) {
+    prescriptionStore.setAnalysisData({
+      complaint: complaint.value,
+      analysis: analysisResult.value,
+      prediction: predictionResult.value
+    });
+  }
+  router.push('/doctor/medicine-selection');
+};
+
+const handleLogout = () => {
+  authStore.logout();
+  router.push('/login');
 };
 </script>
 

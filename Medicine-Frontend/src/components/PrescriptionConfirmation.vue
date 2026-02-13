@@ -3,10 +3,10 @@
     <v-sheet class="navbar-area d-flex justify-space-between align-center px-6">
       <h1 class="logo">Medicine</h1>
       <div class="nav-links">
-        <a href="#" @click.prevent="$emit('switch-mode', 'dashboard')">Ana Sayfa</a>
+        <a href="#" @click.prevent="router.push('/doctor/dashboard')">Ana Sayfa</a>
         <a href="#" class="ml-4">ATM Konumları</a>
         <a href="#" class="ml-4">Hakkında</a>
-        <v-btn variant="outlined" size="small" class="logout-btn ml-6" @click="$emit('logout')">Çıkış Yap</v-btn>
+        <v-btn variant="outlined" size="small" class="logout-btn ml-6" @click="handleLogout">Çıkış Yap</v-btn>
       </div>
     </v-sheet>
 
@@ -31,7 +31,7 @@
                          </div>
                          <div class="d-flex align-center mb-2">
                             <span class="info-label">Hasta TC / Email :</span>
-                            <span class="info-value pl-2">{{ patient.email }}</span>
+                             <span class="info-value pl-2">{{ prescriptionStore.selectedPatient?.email }}</span>
                          </div>
                          <div class="d-flex align-center">
                             <span class="info-label">Tanı :</span>
@@ -117,28 +117,28 @@
 </template>
 
 <script setup>
-import { ref, computed } from 'vue';
+import { ref, computed, onMounted } from 'vue';
+import axios from 'axios';
+import { useRouter } from 'vue-router';
+import { useAuthStore } from '../stores/auth';
+import { usePrescriptionStore } from '../stores/prescription';
 
-const props = defineProps({
-  user: Object,
-  patient: Object,
-  initialMedicines: {
-    type: Array,
-    default: () => []
-  }
-});
+const router = useRouter();
+const authStore = useAuthStore();
+const prescriptionStore = usePrescriptionStore();
 
-const emit = defineEmits(['switch-mode', 'logout', 'confirm-prescription']);
+const API_BASE_URL = import.meta.env.VITE_API_URL || 'http://localhost:8080';
 
-const medicines = ref([...props.initialMedicines]);
+const medicines = ref([...prescriptionStore.selectedMedicines]);
 const isSubmitting = ref(false);
 
 const currentDate = new Date().toLocaleDateString('tr-TR');
 const tempPrescriptionId = Math.floor(Math.random() * 90000000) + 10000000;
 
 const fullName = computed(() => {
-   if (props.patient && props.patient.name) {
-      return props.patient.surname ? `${props.patient.name} ${props.patient.surname}` : props.patient.name;
+   const patient = prescriptionStore.selectedPatient;
+   if (patient && patient.name) {
+      return patient.surname ? `${patient.name} ${patient.surname}` : patient.name;
    }
    return '';
 });
@@ -158,14 +158,44 @@ const removeMedicine = (index) => {
    medicines.value.splice(index, 1);
 };
 
-const confirmPrescription = () => {
+const confirmPrescription = async () => {
    if (medicines.value.length === 0) {
       alert("Reçetede en az bir ilaç olmalıdır.");
       return;
    }
    
    isSubmitting.value = true;
-   emit('confirm-prescription', medicines.value);
+   
+   try {
+     const payload = {
+       doctorEmail: authStore.currentUser.email,
+       patientEmail: prescriptionStore.selectedPatient.email,
+       medicineNames: medicines.value.map(m => m.name)
+     };
+
+     console.log("Reçete Gönderiliyor:", payload);
+
+     const response = await axios.post(`${API_BASE_URL}/api/doctor/write-prescription`, payload);
+
+     alert('Reçete başarıyla oluşturuldu! ID: ' + (response.data.prescriptionId || ''));
+     
+     // Clear prescription data from store
+     prescriptionStore.clearPrescriptionData();
+     
+     // Navigate back to dashboard
+     router.push('/doctor/dashboard');
+
+   } catch (error) {
+     console.error("Reçete gönderilemedi:", error);
+     alert('Hata: Reçete oluşturulamadı. ' + (error.response?.data || error.message));
+   } finally {
+     isSubmitting.value = false;
+   }
+};
+
+const handleLogout = () => {
+  authStore.logout();
+  router.push('/login');
 };
 
 </script>

@@ -4,10 +4,10 @@
     <v-sheet class="navbar" color="transparent">
       <h1 class="logo">Medicine</h1>
       <div class="nav-links">
-        <a href="#" @click="$emit('switch-mode', 'write-prescription')">Reçete Yaz</a>
-        <a href="#">ATM Konumları</a>
-        <a href="#">Hakkında</a>
-        <v-btn @click="$emit('logout')" class="logout-btn" variant="outlined" size="small">Çıkış Yap</v-btn>
+        <a href="#" @click="startPrescription">Reçete Yaz</a>
+        <a href="#" class="ml-4">ATM Konumları</a>
+        <a href="#" class="ml-4">Hakkında</a>
+        <v-btn @click="handleLogout" class="logout-btn" variant="outlined" size="small">Çıkış Yap</v-btn>
       </div>
     </v-sheet>
 
@@ -23,7 +23,7 @@
           <h2 class="welcome-message">Merhaba, Dr. {{ doctorName }}</h2>
         </div>
         <div class="action-section">
-          <v-btn class="action-btn elevation-2" @click="$emit('switch-mode', 'write-prescription')">
+          <v-btn class="action-btn elevation-2" @click="startPrescription">
             Reçete Yaz
           </v-btn>
         </div>
@@ -90,17 +90,16 @@
 <script setup>
 import { ref, onMounted, computed } from 'vue';
 import axios from 'axios';
-// Vuetify bileşenleri import edilmedi, bu yüzden VBtn, VCard vs. burada tanımlanmadı.
-// Ancak main.js'de global olarak kaydedildiği varsayıldı.
+import { useRouter } from 'vue-router';
+import { useAuthStore } from '../stores/auth';
+import { usePrescriptionStore } from '../stores/prescription';
 
-const props = defineProps({
-  user: Object,
-});
+const router = useRouter();
+const authStore = useAuthStore();
+const prescriptionStore = usePrescriptionStore();
 
-const emit = defineEmits(['logout', 'switch-mode']);
-
-const doctorName = computed(() => props.user?.name || 'Kullanıcı');
-const doctorEmail = computed(() => props.user?.email || '');
+const doctorName = computed(() => authStore.currentUser?.name || 'Doktor');
+const doctorEmail = computed(() => authStore.currentUser?.email || '');
 
 const dashboardData = ref({
   todayPrescriptions: 0,
@@ -163,11 +162,23 @@ const fetchDashboardData = async () => {
   }
 };
 
+const startPrescription = () => {
+  // Clear previous prescription data
+  prescriptionStore.clearPrescriptionData();
+  router.push('/doctor/write-prescription');
+};
+
+const handleLogout = () => {
+  authStore.logout();
+  router.push('/login');
+};
+
 onMounted(() => {
   if (doctorEmail.value) {
     fetchDashboardData();
   }
 });
+
 
 </script>
 

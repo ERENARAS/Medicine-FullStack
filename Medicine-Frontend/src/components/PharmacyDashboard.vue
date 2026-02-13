@@ -8,7 +8,7 @@
         <a href="#" @click="currentView = 'dashboard'">Ana Sayfa</a>
         <a href="#" @click="currentView = 'stock-management'">Stok Yönetimi</a>
         <a href="#">Hakkında</a>
-        <v-btn @click="$emit('logout')" class="logout-btn" variant="outlined" size="small">Çıkış Yap</v-btn>
+        <v-btn @click="handleLogout" class="logout-btn" variant="outlined" size="small">Çıkış Yap</v-btn>
       </div>
     </v-sheet>
 
@@ -94,16 +94,20 @@ import ATMStockManagement from './ATMStockManagement.vue';
 import ATMLocations from './ATMLocations.vue';
 import ReportsAndAnalysis from './ReportsAndAnalysis.vue';
 import axios from 'axios';
+import { useRouter } from 'vue-router';
+import { useAuthStore } from '../stores/auth';
 
-const props = defineProps({
-  user: Object,
-});
+const router = useRouter();
+const authStore = useAuthStore();
 
-const emit = defineEmits(['logout', 'switch-mode']);
-
-const pharmacyStaffName = computed(() => props.user?.name || 'Eczane Personeli');
-const currentView = ref('dashboard'); // 'dashboard' or 'stock-management'
+const pharmacyStaffName = computed(() => authStore.currentUser?.name || 'Eczane Personeli');
+const currentView = ref('dashboard'); // 'dashboard' or nested routes
 const API_BASE_URL = import.meta.env.VITE_API_URL || 'http://localhost:8080';
+
+const handleLogout = () => {
+  authStore.logout();
+  router.push('/login');
+};
 
 // LIFECYCLE HOOK'U: Bileşen yüklendiğinde çalışır
 onMounted(() => {

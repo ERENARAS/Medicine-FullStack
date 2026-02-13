@@ -9,6 +9,10 @@ import * as directives from 'vuetify/directives'
 // Material Design Icons
 import '@mdi/font/css/materialdesignicons.css'
 
+// Vue Router ve Pinia
+import router from './router'
+import { createPinia } from 'pinia'
+
 const vuetify = createVuetify({
     components,
     directives,
@@ -17,5 +21,10 @@ const vuetify = createVuetify({
     },
 })
 
-// createApp yerine createApp(App).use(vuetify).mount('#app') kullanın.
-createApp(App).use(vuetify).mount('#app')
+const pinia = createPinia()
+
+createApp(App)
+    .use(vuetify)
+    .use(pinia)
+    .use(router)
+    .mount('#app')

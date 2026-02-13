@@ -4,10 +4,10 @@
     <v-sheet class="navbar-area d-flex justify-space-between align-center px-6">
       <h1 class="logo">Medicine</h1>
       <div class="nav-links">
-        <a href="#" @click.prevent="$emit('switch-mode', 'dashboard')">Ana Sayfa</a>
+        <a href="#" @click.prevent="router.push('/doctor/dashboard')">Ana Sayfa</a>
         <a href="#" class="ml-4">ATM Konumları</a>
         <a href="#" class="ml-4">Hakkında</a>
-        <v-btn variant="outlined" size="small" class="logout-btn ml-6" @click="$emit('logout')">Çıkış Yap</v-btn>
+        <v-btn variant="outlined" size="small" class="logout-btn ml-6" @click="handleLogout">Çıkış Yap</v-btn>
       </div>
     </v-sheet>
 
@@ -112,13 +112,13 @@
 <script setup>
 import { ref, computed, onMounted } from 'vue';
 import axios from 'axios';
+import { useRouter } from 'vue-router';
+import { useAuthStore } from '../stores/auth';
+import { usePrescriptionStore } from '../stores/prescription';
 
-const props = defineProps({
-  user: Object,
-  patient: Object, // passed from App.vue
-});
-
-const emit = defineEmits(['switch-mode', 'logout', 'finish-prescription']);
+const router = useRouter();
+const authStore = useAuthStore();
+const prescriptionStore = usePrescriptionStore();
 
 const searchQuery = ref('');
 const selectedMedicines = ref([]);
@@ -138,10 +138,11 @@ const fetchMedicines = async () => {
 
 // Fetch full patient details to get allergies
 const fetchPatientDetails = async () => {
-  if (!props.patient || !props.patient.email) return;
+  const patient = prescriptionStore.selectedPatient;
+  if (!patient || !patient.email) return;
   
   try {
-    const response = await axios.get(`${API_BASE_URL}/api/doctor/patient-record/${props.patient.email}`);
+    const response = await axios.get(`${API_BASE_URL}/api/doctor/patient-record/${patient.email}`);
     // response.data contains { patient: {...}, prescriptionHistory: [...] }
     if (response.data.patient && response.data.patient.allergicMedicines) {
       patientAllergies.value = response.data.patient.allergicMedicines;
@@ -195,7 +196,16 @@ const finishSelection = () => {
     if (!confirm) return;
   }
   
-  emit('finish-prescription', selectedMedicines.value);
+  // Save selected medicines to store
+  prescriptionStore.setSelectedMedicines(selectedMedicines.value);
+  
+  // Navigate to confirmation page
+  router.push('/doctor/prescription-confirmation');
+};
+
+const handleLogout = () => {
+  authStore.logout();
+  router.push('/login');
 };
 
 </script>
