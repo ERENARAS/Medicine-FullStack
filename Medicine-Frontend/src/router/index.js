@@ -107,10 +107,15 @@ router.beforeEach((to, from, next) => {
 
     if (requiresAuth) {
         if (!authStore.isAuthenticated) {
-            // Not logged in, redirect to login
+            // Not logged in (no token), redirect to login
             next('/login')
         } else if (requiredRole && authStore.currentUser.role !== requiredRole) {
             // Logged in but wrong role, redirect to their dashboard
+            // Note: If role is null (state lost on refresh but token exists), checkAuth should have restored it.
+            // If checkAuth failed to restore role (e.g. invalid stored user), Axios interceptor will handle 401 later.
+            // For now, if role is missing, we might want to redirect to login or wait. 
+            // Since we call checkAuth() in main.js, this should be synchronous usually if reading from localStorage.
+
             const userRole = authStore.currentUser.role
             if (userRole === 'doctor') {
                 next('/doctor/dashboard')
@@ -119,6 +124,8 @@ router.beforeEach((to, from, next) => {
             } else if (userRole === 'pharmacy') {
                 next('/pharmacy/dashboard')
             } else {
+                // Unknown role or null, redirect to login to be safe
+                authStore.logout()
                 next('/login')
             }
         } else {
@@ -127,7 +134,16 @@ router.beforeEach((to, from, next) => {
         }
     } else {
         // Public route
-        next()
+        if (authStore.isAuthenticated && (to.path === '/login' || to.path === '/signup')) {
+            // If already logged in and trying to access login/signup, redirect to dashboard
+            const userRole = authStore.currentUser.role
+            if (userRole === 'doctor') next('/doctor/dashboard')
+            else if (userRole === 'patient') next('/patient/dashboard')
+            else if (userRole === 'pharmacy') next('/pharmacy/dashboard')
+            else next()
+        } else {
+            next()
+        }
     }
 })
 

@@ -5,15 +5,15 @@
     <v-sheet class="navbar" color="transparent">
       <h1 class="logo">Medicine</h1>
       <div class="nav-links">
-        <a href="#" @click="currentView = 'dashboard'">Ana Sayfa</a>
-        <a href="#" @click="currentView = 'stock-management'">Stok Yönetimi</a>
+        <a href="#" @click="router.push('/pharmacy/dashboard')">Ana Sayfa</a>
+        <a href="#" @click="router.push('/pharmacy/stock-management')">Stok Yönetimi</a>
         <a href="#">Hakkında</a>
         <v-btn @click="handleLogout" class="logout-btn" variant="outlined" size="small">Çıkış Yap</v-btn>
       </div>
     </v-sheet>
 
     <!-- Dashboard View -->
-    <div v-if="currentView === 'dashboard'">
+    <div>
       <!-- Welcome Card -->
       <v-card class="welcome-card elevation-4">
         <div class="card-content">
@@ -32,7 +32,7 @@
 
       <!-- Menu Cards Grid -->
       <div class="menu-grid">
-        <v-card class="menu-card elevation-2" @click="currentView = 'stock-management'">
+        <v-card class="menu-card elevation-2" @click="router.push('/pharmacy/stock-management')">
           <div class="card-icon">
             <v-icon size="48" color="#252B61">mdi-package-variant</v-icon>
           </div>
@@ -42,7 +42,7 @@
           </div>
         </v-card>
 
-        <v-card class="menu-card elevation-2" @click="currentView = 'atm-locations'">
+        <v-card class="menu-card elevation-2" @click="router.push('/pharmacy/atm-locations')">
           <div class="card-icon">
             <v-icon size="48" color="#252B61">mdi-map-marker</v-icon>
           </div>
@@ -52,7 +52,7 @@
           </div>
         </v-card>
 
-        <v-card class="menu-card elevation-2" @click="currentView = 'reports-analysis'">
+        <v-card class="menu-card elevation-2" @click="router.push('/pharmacy/reports')">
           <div class="card-icon">
             <v-icon size="48" color="#252B61">mdi-chart-areaspline</v-icon>
           </div>
@@ -64,36 +64,11 @@
       </div>
     </div>
 
-    <!-- Stock Management View -->
-    <ATMStockManagement 
-      v-else-if="currentView === 'stock-management'" 
-      :userId="props.user.id"
-      @back="currentView = 'dashboard'"
-    />
-
-    <!-- ATM Locations View -->
-    <ATMLocations 
-      v-else-if="currentView === 'atm-locations'" 
-      :userId="props.user.id"
-      @back="currentView = 'dashboard'"
-    />
-
-    <!-- Reports and Analysis View -->
-    <ReportsAndAnalysis 
-      v-else-if="currentView === 'reports-analysis'" 
-      :userId="props.user.id"
-      @back="currentView = 'dashboard'"
-    />
-
   </v-container>
 </template>
 
 <script setup>
 import { ref, computed, onMounted } from 'vue';
-import ATMStockManagement from './ATMStockManagement.vue';
-import ATMLocations from './ATMLocations.vue';
-import ReportsAndAnalysis from './ReportsAndAnalysis.vue';
-import axios from 'axios';
 import { useRouter } from 'vue-router';
 import { useAuthStore } from '../stores/auth';
 
@@ -101,7 +76,6 @@ const router = useRouter();
 const authStore = useAuthStore();
 
 const pharmacyStaffName = computed(() => authStore.currentUser?.name || 'Eczane Personeli');
-const currentView = ref('dashboard'); // 'dashboard' or nested routes
 const API_BASE_URL = import.meta.env.VITE_API_URL || 'http://localhost:8080';
 
 const handleLogout = () => {

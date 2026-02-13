@@ -118,7 +118,7 @@
 
 <script setup>
 import { ref, computed, onMounted } from 'vue';
-import axios from 'axios';
+import api from '../api';
 import { useRouter } from 'vue-router';
 import { useAuthStore } from '../stores/auth';
 import { usePrescriptionStore } from '../stores/prescription';
@@ -175,7 +175,7 @@ const confirmPrescription = async () => {
 
      console.log("Reçete Gönderiliyor:", payload);
 
-     const response = await axios.post(`${API_BASE_URL}/api/doctor/write-prescription`, payload);
+     const response = await api.post(`/api/doctor/write-prescription`, payload);
 
      alert('Reçete başarıyla oluşturuldu! ID: ' + (response.data.prescriptionId || ''));
      

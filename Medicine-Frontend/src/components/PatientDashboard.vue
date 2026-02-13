@@ -256,7 +256,7 @@
 
 <script setup>
 import { ref, onMounted, computed } from 'vue';
-import axios from 'axios';
+import api from '../api';
 import { useRouter } from 'vue-router';
 import { useAuthStore } from '../stores/auth';
 
@@ -319,7 +319,7 @@ const hasStockIssues = computed(() => {
 const fetchPatientInfo = async () => {
   isLoadingPatient.value = true;
   try {
-    const response = await axios.get(`${API_BASE_URL}/api/patient/info/${patientEmail.value}`);
+    const response = await api.get(`/api/patient/info/${patientEmail.value}`);
     patientInfo.value = response.data;
   } catch (error) {
     console.error("Hasta bilgileri çekilemedi:", error);
@@ -333,7 +333,7 @@ const fetchPrescriptions = async () => {
   isLoadingPrescriptions.value = true;
   errorMessage.value = '';
   try {
-    const response = await axios.get(`${API_BASE_URL}/api/patient/my-prescriptions/${patientEmail.value}`);
+    const response = await api.get(`/api/patient/my-prescriptions/${patientEmail.value}`);
     prescriptions.value = response.data;
   } catch (error) {
     console.error("Reçeteler çekilemedi:", error);
@@ -383,7 +383,7 @@ const checkStockStatus = async () => {
   const medicineNames = selectedPrescription.value.medicines.map(m => m.name);
 
   try {
-    const response = await axios.post(`${API_BASE_URL}/api/atm/check-stock`, {
+    const response = await api.post(`/api/atm/check-stock`, {
       atmId: manualAtmId.value,
       medicineNames: medicineNames
     });
@@ -401,7 +401,7 @@ const confirmDispense = async () => {
   dispenseSuccess.value = '';
 
   try {
-    const response = await axios.post(`${API_BASE_URL}/api/patient/dispense`, {
+    const response = await api.post(`/api/patient/dispense`, {
       prescriptionId: selectedPrescription.value.id,
       patientEmail: patientEmail.value,
       atmId: manualAtmId.value
@@ -443,7 +443,7 @@ const addAllergy = async () => {
   }
 
   try {
-    const response = await axios.post(`${API_BASE_URL}/api/patient/allergies/add`, {
+    const response = await api.post(`/api/patient/allergies/add`, {
       patientEmail: patientEmail.value,
       allergyName: newAllergy.value.trim()
     });
@@ -465,7 +465,7 @@ const removeAllergy = async (allergyName) => {
   }
 
   try {
-    await axios.delete(`${API_BASE_URL}/api/patient/allergies/remove`, {
+    await api.delete(`/api/patient/allergies/remove`, {
       data: {
         patientEmail: patientEmail.value,
         allergyName: allergyName
@@ -485,7 +485,7 @@ const removeAllergy = async (allergyName) => {
 const fetchATMs = async () => {
   isLoadingATMs.value = true;
   try {
-    const response = await axios.get(`${API_BASE_URL}/api/atm/all`);
+    const response = await api.get(`/api/atm/all`);
     atms.value = response.data;
   } catch (error) {
     console.error("ATM listesi çekilemedi:", error);

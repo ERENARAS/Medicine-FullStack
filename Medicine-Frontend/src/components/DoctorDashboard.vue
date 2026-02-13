@@ -89,7 +89,8 @@
 
 <script setup>
 import { ref, onMounted, computed } from 'vue';
-import axios from 'axios';
+
+import api from '../api';
 import { useRouter } from 'vue-router';
 import { useAuthStore } from '../stores/auth';
 import { usePrescriptionStore } from '../stores/prescription';
@@ -119,7 +120,13 @@ const fetchDashboardData = async () => {
   errorMessage.value = '';
 
   try {
-    const response = await axios.get(`${API_BASE_URL}/api/doctor/dashboard/${doctorEmail.value}`);
+    // Note: api instance already has base URL if configured, but here we are using full URL
+    // If api.js has baseURL setup, we should use relative path. 
+    // Let's check api.js content again. It has baseURL: import.meta.env.VITE_API_URL || 'http://localhost:8080'
+    // So we should just pass '/api/doctor/dashboard/...'
+    
+    // Using relative path mainly
+    const response = await api.get(`/api/doctor/dashboard/${doctorEmail.value}`);
     const data = response.data;
 
     const allPrescriptions = data.allPrescriptions || [];

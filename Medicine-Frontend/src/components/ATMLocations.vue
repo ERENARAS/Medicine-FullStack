@@ -4,7 +4,7 @@
      
     <div class="header-section">
       <div class="header-left">
-        <v-btn class="back-btn" @click="$emit('back')" variant="text" size="small">
+        <v-btn class="back-btn" @click="router.push('/pharmacy/dashboard')" variant="text" size="small">
           <v-icon left>mdi-arrow-left</v-icon>
           Geri Dön
         </v-btn>
@@ -132,16 +132,19 @@
   </div>
 </template>
 
+
 <script setup>
 import { ref, computed, onMounted } from 'vue';
-import axios from 'axios';
+import api from '../api';
+import { useRouter } from 'vue-router';
+import { useAuthStore } from '../stores/auth';
 
-const props = defineProps({
-  userId: [Number, String]
-});
+const router = useRouter();
+const authStore = useAuthStore();
+const emit = defineEmits(['back']); // Kept for now to avoid breaking if used elsewhere, but will use router
 
-const emit = defineEmits(['back']);
 const API_BASE_URL = import.meta.env.VITE_API_URL || 'http://localhost:8080';
+
 
 // State
 const atms = ref([]);
@@ -171,9 +174,17 @@ const filteredATMs = computed(() => {
 const fetchATMs = async () => {
   isLoading.value = true;
   errorMessage.value = '';
+  const userId = authStore.currentUser?.id;
+  
+  if (!userId) {
+      errorMessage.value = 'Kullanıcı bilgisi bulunamadı.';
+      isLoading.value = false;
+      return;
+  }
+
   try {
-    const params = props.userId ? { staffId: props.userId } : {};
-    const response = await axios.get(`${API_BASE_URL}/api/atm/all`, { params });
+    const params = { staffId: userId };
+    const response = await api.get(`/api/atm/all`, { params });
     atms.value = response.data;
   } catch (error) {
     console.error('ATM listesi alınamadı:', error);
@@ -206,7 +217,8 @@ const addATM = async () => {
     return;
   }
   
-  if (!props.userId) {
+  const userId = authStore.currentUser?.id;
+  if (!userId) {
      addError.value = 'Kullanıcı bilgisi eksik, lütfen tekrar giriş yapın.';
      return;
   }
@@ -215,9 +227,9 @@ const addATM = async () => {
   addError.value = '';
 
   try {
-    await axios.post(`${API_BASE_URL}/api/atm/create`, { 
+    await api.post(`/api/atm/create`, { 
       location: newAtmLocation.value,
-      staffId: props.userId
+      staffId: authStore.currentUser?.id
     });
     
     successMessage.value = 'Yeni ATM başarıyla eklendi!';

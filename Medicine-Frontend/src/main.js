@@ -22,9 +22,15 @@ const vuetify = createVuetify({
 })
 
 const pinia = createPinia()
+const app = createApp(App)
 
-createApp(App)
-    .use(vuetify)
-    .use(pinia)
-    .use(router)
-    .mount('#app')
+app.use(vuetify)
+app.use(pinia)
+
+// Initialize auth store to restore session
+import { useAuthStore } from './stores/auth'
+const authStore = useAuthStore()
+authStore.checkAuth()
+
+app.use(router)
+app.mount('#app')

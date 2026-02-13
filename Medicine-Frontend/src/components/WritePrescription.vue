@@ -162,7 +162,7 @@
 
 <script setup>
 import { ref, onMounted, computed } from 'vue';
-import axios from 'axios';
+import api from '../api';
 import { useRouter } from 'vue-router';
 import { useAuthStore } from '../stores/auth';
 import { usePrescriptionStore } from '../stores/prescription';
@@ -226,7 +226,7 @@ const fetchPatients = async () => {
   errorFetchingPatients.value = null;
 
   try {
-    const response = await axios.get(`${API_BASE_URL}/api/doctor/patients`, {
+    const response = await api.get(`/api/doctor/patients`, {
       timeout: 5000
     });
 

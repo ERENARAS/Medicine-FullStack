@@ -36,7 +36,7 @@
 
 <script setup>
 import { ref } from 'vue';
-import axios from 'axios';
+import api from '../api';
 import { useRouter } from 'vue-router';
 import { useAuthStore } from '../stores/auth';
 
@@ -72,7 +72,7 @@ const loginUser = async () => {
 
   try {
     // 💡 GÜNCELLENDİ: API_BASE_URL değişkenini kullan
-    response = await axios.post(`${API_BASE_URL}/api/auth/login`, {
+    response = await api.post(`/api/auth/login`, {
       email: form.value.email,
       password: form.value.password,
     });

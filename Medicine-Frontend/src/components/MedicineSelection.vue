@@ -111,7 +111,7 @@
 
 <script setup>
 import { ref, computed, onMounted } from 'vue';
-import axios from 'axios';
+import api from '../api';
 import { useRouter } from 'vue-router';
 import { useAuthStore } from '../stores/auth';
 import { usePrescriptionStore } from '../stores/prescription';
@@ -129,7 +129,7 @@ const API_BASE_URL = import.meta.env.VITE_API_URL || 'http://localhost:8080';
 // Fetch medicines from backend
 const fetchMedicines = async () => {
   try {
-    const response = await axios.get(`${API_BASE_URL}/api/medicines`);
+    const response = await api.get(`/api/medicines`);
     allMedicines.value = response.data;
   } catch (error) {
     console.error("İlaçlar yüklenemedi:", error);
@@ -142,7 +142,7 @@ const fetchPatientDetails = async () => {
   if (!patient || !patient.email) return;
   
   try {
-    const response = await axios.get(`${API_BASE_URL}/api/doctor/patient-record/${patient.email}`);
+    const response = await api.get(`/api/doctor/patient-record/${patient.email}`);
     // response.data contains { patient: {...}, prescriptionHistory: [...] }
     if (response.data.patient && response.data.patient.allergicMedicines) {
       patientAllergies.value = response.data.patient.allergicMedicines;

@@ -120,7 +120,7 @@
 
 <script setup>
 import { ref } from 'vue';
-import axios from 'axios';
+import api from '../api';
 import { useRouter } from 'vue-router';
 import { useAuthStore } from '../stores/auth';
 import { usePrescriptionStore } from '../stores/prescription';
@@ -143,7 +143,7 @@ const analyzeComplaint = async () => {
   predictionResult.value = null;
 
   try {
-    const response = await axios.post(`${API_BASE_URL}/api/medical-analysis`, complaint.value, {
+    const response = await api.post(`/api/medical-analysis`, complaint.value, {
       headers: {
         'Content-Type': 'text/plain'
       }
@@ -165,7 +165,7 @@ const diagnoseComplaint = async () => {
   predictionResult.value = null;
 
   try {
-    const response = await axios.post(`${API_BASE_URL}/api/medical-analysis/diagnose`, complaint.value, {
+    const response = await api.post(`/api/medical-analysis/diagnose`, complaint.value, {
       headers: {
         'Content-Type': 'text/plain'
       }

@@ -3,7 +3,7 @@
     <!-- Header with Back Button -->
     <div class="header-section">
       <div class="header-left">
-        <v-btn class="back-btn" @click="$emit('back')" variant="text" size="small">
+        <v-btn class="back-btn" @click="goBack" variant="text" size="small">
           <v-icon left>mdi-arrow-left</v-icon>
           Geri Dön
         </v-btn>
@@ -177,14 +177,21 @@
   </div>
 </template>
 
+
 <script setup>
 import { ref, computed, onMounted } from 'vue';
-import axios from 'axios';
+import api from '../api';
+import { useRouter } from 'vue-router';
+import { useAuthStore } from '../stores/auth';
 
-const emit = defineEmits(['back']);
-const props = defineProps({
-  userId: [Number, String]
-});
+const router = useRouter();
+const authStore = useAuthStore();
+
+// Removed props and emit
+// const emit = defineEmits(['back']);
+// const props = defineProps({
+//   userId: [Number, String]
+// });
 
 const API_BASE_URL = import.meta.env.VITE_API_URL || 'http://localhost:8080';
 
@@ -196,45 +203,61 @@ const atmLocation = ref('Yükleniyor...');
 const isLoading = ref(true);
 const errorMessage = ref('');
 const searchQuery = ref('');
-
-// Form state
-const formData = ref({
-  medicineName: '',
-  quantity: 0,
-  shelfCode: ''
-});
-const isSubmitting = ref(false);
 const formError = ref('');
 const formSuccess = ref('');
+const isSubmitting = ref(false);
+const recentActivities = ref([]);
 
-// Mock recent activities (since backend doesn't provide this yet)
-const recentActivities = ref([
-  { id: 1, date: '2024-12-12 14:30', medicineName: 'Parol 500mg', type: 'in', quantity: 50 },
-  { id: 2, date: '2024-12-12 11:23', medicineName: 'Majezik 100mg', type: 'in', quantity: 20 },
-  { id: 3, date: '2024-12-12 09:15', medicineName: 'Aspirin 100mg', type: 'out', quantity: 2 },
-]);
+const formData = ref({
+    medicineName: '',
+    quantity: 0,
+    shelfCode: ''
+});
 
 // Computed
 const filteredStock = computed(() => {
-  if (!searchQuery.value) return stockData.value;
-  
-  const query = searchQuery.value.toLowerCase();
-  const filtered = {};
-  
-  Object.entries(stockData.value).forEach(([name, quantity]) => {
-    if (name.toLowerCase().includes(query)) {
-      filtered[name] = quantity;
+    if (!searchQuery.value) return stockData.value;
+    const query = searchQuery.value.toLowerCase();
+    const filtered = {};
+    for (const [key, value] of Object.entries(stockData.value)) {
+        if (key.toLowerCase().includes(query)) {
+            filtered[key] = value;
+        }
     }
-  });
-  
-  return filtered;
+    return filtered;
 });
 
 // Methods
+const goBack = () => {
+    router.push('/pharmacy/dashboard');
+};
+
+const fetchStock = async () => {
+  if (!selectedAtmId.value) return;
+  isLoading.value = true;
+  errorMessage.value = '';
+  
+  try {
+    const response = await api.get(`/api/pharmacy/stock/${selectedAtmId.value}`);
+    stockData.value = response.data.stock || {};
+    atmLocation.value = response.data.location || 'Bilinmiyor';
+  } catch (error) {
+    console.error('Stok bilgileri alınamadı:', error);
+    errorMessage.value = 'Stok bilgileri yüklenirken bir hata oluştu: ' + (error.response?.data || error.message);
+  } finally {
+    isLoading.value = false;
+  }
+};
+
 const fetchUserATMs = async () => {
-    if (!props.userId) return;
+    const userId = authStore.currentUser?.id;
+    if (!userId) {
+        errorMessage.value = "Kullanıcı bilgisi bulunamadı.";
+        isLoading.value = false;
+        return;
+    }
     try {
-        const response = await axios.get(`${API_BASE_URL}/api/atm/all`, { params: { staffId: props.userId } });
+        const response = await api.get(`/api/atm/all`, { params: { staffId: userId } });
         atms.value = response.data;
         if (atms.value.length > 0) {
             selectedAtmId.value = atms.value[0].id;
@@ -244,26 +267,10 @@ const fetchUserATMs = async () => {
             errorMessage.value = "Sorumlu olduğunuz ATM bulunamadı.";
         }
     } catch (error) {
-        console.error("ATM listesi alınamadı:", error);
+        console.error("ATM listesi hatası:", error);
         errorMessage.value = "ATM listesi yüklenemedi.";
+        isLoading.value = false;
     }
-};
-
-const fetchStock = async () => {
-  if (!selectedAtmId.value) return;
-  isLoading.value = true;
-  errorMessage.value = '';
-  
-  try {
-    const response = await axios.get(`${API_BASE_URL}/api/pharmacy/stock/${selectedAtmId.value}`);
-    stockData.value = response.data.stock || {};
-    atmLocation.value = response.data.location || 'Bilinmiyor';
-  } catch (error) {
-    console.error('Stok bilgileri alınamadı:', error);
-    errorMessage.value = 'Stok bilgileri yüklenirken bir hata oluştu: ' + (error.response?.data || error.message);
-  } finally {
-    isLoading.value = false;
-  }
 };
 
 const addStock = async () => {
@@ -283,7 +290,7 @@ const addStock = async () => {
       quantity: formData.value.quantity
     };
 
-    const response = await axios.post(`${API_BASE_URL}/api/pharmacy/add-stock`, payload);
+    const response = await api.post(`/api/pharmacy/add-stock`, payload);
     
     formSuccess.value = response.data.message || 'Stok başarıyla eklendi!';
     

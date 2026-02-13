@@ -2,6 +2,12 @@
   <div class="reports-container">
     <!-- Header -->
     <div class="reports-header">
+      <div class="header-left">
+        <v-btn class="back-btn" @click="router.push('/pharmacy/dashboard')" variant="text" size="small">
+          <v-icon left>mdi-arrow-left</v-icon>
+          Geri Dön
+        </v-btn>
+      </div>
       <div class="header-content">
         <h1 class="page-title">Raporlar ve Analiz</h1>
         <p class="page-subtitle">ATM stok hareketleri, kullanım verileri ve operasyonel metrikler.</p>
@@ -182,7 +188,9 @@
 
 <script setup>
 import { ref, onMounted, computed } from 'vue';
-import axios from 'axios';
+import api from '../api';
+import { useRouter } from 'vue-router';
+import { useAuthStore } from '../stores/auth';
 import {
   Chart as ChartJS,
   Title,
@@ -197,9 +205,8 @@ import { Bar, Doughnut } from 'vue-chartjs';
 
 ChartJS.register(CategoryScale, LinearScale, BarElement, Title, Tooltip, Legend, ArcElement);
 
-const props = defineProps({
-    userId: [Number, String]
-});
+const router = useRouter();
+const authStore = useAuthStore();
 
 const API_BASE_URL = import.meta.env.VITE_API_URL || 'http://localhost:8080';
 
@@ -221,8 +228,9 @@ const searchLoading = ref(false);
 // Data Fetching
 const fetchATMData = async () => {
     try {
-        const params = props.userId ? { staffId: props.userId } : {};
-        const response = await axios.get(`${API_BASE_URL}/api/atm/all`, { params });
+        const userId = authStore.currentUser?.id;
+        const params = userId ? { staffId: userId } : {};
+        const response = await api.get(`/api/atm/all`, { params });
         const atms = response.data;
         
         // Process for Low Stock Alerts
@@ -289,7 +297,7 @@ const fetchATMData = async () => {
 
 const fetchSalesData = async () => {
      try {
-        const response = await axios.get(`${API_BASE_URL}/api/data/historical-sales`);
+        const response = await api.get(`/api/data/historical-sales`);
         const sales = response.data;
         
         // Group by Medicine Name
@@ -395,7 +403,7 @@ const salesChartOptions = {
 
 const fetchTopPredictions = async () => {
     try {
-        const response = await axios.get(`${API_BASE_URL}/api/analysis/predictions/top-5`);
+        const response = await api.get(`/api/analysis/predictions/top-5`);
         topPredictions.value = response.data;
     } catch (error) {
         console.error("Tahmin verisi hatası:", error);
@@ -407,7 +415,7 @@ const handleSearch = async () => {
     searchLoading.value = true;
     // searchResult.value = null; // Optional: clear previous results immediately
     try {
-        const response = await axios.get(`${API_BASE_URL}/api/analysis/predictions/search`, {
+        const response = await api.get(`/api/analysis/predictions/search`, {
             params: { name: searchQuery.value }
         });
         searchResult.value = response.data;
@@ -443,11 +451,18 @@ onMounted(() => {
 /* Header */
 .reports-header {
   display: flex;
-  justify-content: space-between;
   align-items: center;
   margin-bottom: 30px;
   flex-wrap: wrap;
   gap: 20px;
+}
+
+.header-left {
+    margin-right: 15px;
+}
+
+.header-content {
+    flex: 1;
 }
 
 .page-title {
