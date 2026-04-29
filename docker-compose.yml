@@ -1,0 +1,76 @@
+version: '3.8'
+
+services:
+
+  # 1. MySQL Veritabanı Servisi
+  db:
+    build:
+      context: ./mysql-init
+      dockerfile: Dockerfile
+    container_name: mysql_db
+    restart: always
+    environment:
+      MYSQL_ROOT_PASSWORD: root
+      MYSQL_DATABASE: medicine_db
+      MYSQL_USER: medicine_user
+      MYSQL_PASSWORD: medicine_pass
+    ports:
+      - "3307:3306"
+    volumes:
+      - mysql_data:/var/lib/mysql
+    healthcheck:
+      test: [ "CMD", "mysqladmin", "ping", "-h", "localhost", "-u", "root", "-proot" ]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+
+  # 2. Spring Boot Backend Servisi
+  backend:
+    build:
+      context: ./medicine-backend
+      dockerfile: Dockerfile
+    container_name: spring_backend
+    ports:
+      - "8080:8080" # Dış dünyaya 8080 portunda aç
+    environment:
+      # DB'ye Docker içindeki "db" servis adı ile bağlan
+      SPRING_DATASOURCE_URL: jdbc:mysql://db:3306/medicine_db?useSSL=false&allowPublicKeyRetrieval=true&serverTimezone=UTC
+      SPRING_DATASOURCE_USERNAME: medicine_user
+      SPRING_DATASOURCE_PASSWORD: medicine_pass
+
+    # DB servisi sağlıklı olana kadar bekle
+    depends_on:
+      db:
+        condition: service_healthy
+
+  # 3. Vue.js Frontend Servisi
+  frontend:
+    build:
+      context: ./Medicine-Frontend
+      dockerfile: Dockerfile
+      # Build argümanı: Frontend'in derlenirken kullanacağı API URL'ini belirtir
+      args:
+        VITE_API_URL: http://localhost:8080
+    container_name: vue_frontend
+    ports:
+      - "80:80"
+    depends_on:
+      # Backend ayağa kalktıktan sonra başla (zorunlu değil ama iyidir)
+      - backend
+
+  prediction_service:
+    build:
+      context: ./prediction-service # Adım 1'de oluşturduğunuz klasör
+      dockerfile: Dockerfile
+    container_name: python_ml_service
+    # Sadece Docker network içinde 5000 portunda açılır (Java'nın erişimi için)
+    expose:
+      - "5000"
+    environment:
+      DATABASE_URL: mysql+pymysql://medicine_user:medicine_pass@db:3306/medicine_db
+    depends_on:
+      # Veri çekeceği için Java backend'e bağımlı olmalı
+      - backend
+
+volumes:
+  mysql_data:
