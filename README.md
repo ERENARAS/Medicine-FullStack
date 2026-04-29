@@ -23,6 +23,11 @@ Veritabanı değişikliği, sistemin tüm katmanlarında (Backend, Veritabanı, 
 *   **Bağımlılıklar:** `psycopg2` yerine `pymysql` ve `sqlalchemy` eklendi. Build süresini optimize etmek için PyTorch'un sadece CPU versiyonu kullanılacak şekilde `requirements.txt` revize edildi.
 *   **SQL Güncellemeleri:** PostgreSQL'e özgü `gen_random_uuid()` fonksiyonu, MySQL 8.0'ın `UUID_TO_BIN(UUID())` yapısı ile değiştirilerek veri tutarlılığı sağlandı.
 
+### 4. Güvenlik ve Konfigürasyon Yönetimi
+*   **Hassas Veri Gizleme:** Veritabanı şifreleri ve bağlantı URL'leri artık kod içerisinde (hardcoded) tutulmamaktadır.
+*   **Environment Variables:** Tüm konfigürasyonlar `${VARIABLE:-default}` yapısı ile çevre değişkenlerine bağlanmıştır.
+*   **`.env` Desteği:** Hassas veriler için `.gitignore` tarafından korunan bir `.env` dosyası yapısı kurulmuştur. Bu, profesyonel projelerde uygulanan bir güvenlik standartıdır.
+
 ---
 
 ## 💡 Geçiş Neden Bu Kadar "Kolay" Oldu?

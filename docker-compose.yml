@@ -10,10 +10,10 @@ services:
     container_name: mysql_db
     restart: always
     environment:
-      MYSQL_ROOT_PASSWORD: root
-      MYSQL_DATABASE: medicine_db
-      MYSQL_USER: medicine_user
-      MYSQL_PASSWORD: medicine_pass
+      MYSQL_ROOT_PASSWORD: ${MYSQL_ROOT_PASSWORD:-root}
+      MYSQL_DATABASE: ${MYSQL_DATABASE:-medicine_db}
+      MYSQL_USER: ${MYSQL_USER:-medicine_user}
+      MYSQL_PASSWORD: ${MYSQL_PASSWORD:-medicine_pass}
     ports:
       - "3307:3306"
     volumes:
@@ -34,9 +34,9 @@ services:
       - "8080:8080" # Dış dünyaya 8080 portunda aç
     environment:
       # DB'ye Docker içindeki "db" servis adı ile bağlan
-      SPRING_DATASOURCE_URL: jdbc:mysql://db:3306/medicine_db?useSSL=false&allowPublicKeyRetrieval=true&serverTimezone=UTC
-      SPRING_DATASOURCE_USERNAME: medicine_user
-      SPRING_DATASOURCE_PASSWORD: medicine_pass
+      SPRING_DATASOURCE_URL: ${SPRING_DATASOURCE_URL:-jdbc:mysql://db:3306/medicine_db?useSSL=false&allowPublicKeyRetrieval=true&serverTimezone=UTC}
+      SPRING_DATASOURCE_USERNAME: ${MYSQL_USER:-medicine_user}
+      SPRING_DATASOURCE_PASSWORD: ${MYSQL_PASSWORD:-medicine_pass}
 
     # DB servisi sağlıklı olana kadar bekle
     depends_on:
@@ -67,7 +67,7 @@ services:
     expose:
       - "5000"
     environment:
-      DATABASE_URL: mysql+pymysql://medicine_user:medicine_pass@db:3306/medicine_db
+      DATABASE_URL: ${PYTHON_DATABASE_URL:-mysql+pymysql://medicine_user:medicine_pass@db:3306/medicine_db}
     depends_on:
       # Veri çekeceği için Java backend'e bağımlı olmalı
       - backend
